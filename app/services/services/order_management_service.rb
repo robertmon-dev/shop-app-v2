@@ -9,136 +9,111 @@
 # payment processing, or external API interactions
 module Services
   class OrderManagementService
+    include Concerns::Handlers
+    include Concerns::ResultHelpers
+
     def initialize(order)
       @order = order
     end
 
     def update(params)
-      if @order.update(params)
-        Services::Result.new(success?: true, data: { order: @order }, status: :ok,
-                             message: 'Order updated successfully.')
-      else
-        Services::Result.new(success?: false, errors: @order.errors.full_messages, status: :unprocessable_content,
-                             message: 'Order update failed due to validation errors.')
+      with_error_handling do
+        unless @order.update(params)
+          return unprocessable_content_result(record: @order, message: 'Order update failed due to validation errors.')
+        end
+
+        @order.reload
+        return success_result(data: { order: @order }, message: 'Order updated successfully', status: :ok)
       end
-    rescue StandardError => e
-      Rails.logger.error("Order update failed for order ID #{@order.id}: #{e.message}")
-      Services::Result.new(success?: false, errors: ['An unexpected error occurred during order update.'],
-                           status: :internal_server_error, message: 'An unexpected error occurred.')
     end
 
     def cancel
       unless @order.status_pending? || @order.status_processing?
-        return Services::Result.new(
-          success?: false,
-          errors: ["Cannot cancel order with status: #{@order.status}"],
-          status: :unprocessable_content,
-          message: "Cannot cancel order with status: #{@order.status}."
-        )
+        unprocessable_content_with_errors_result(errors: ["Cannot cancel order with status: #{@order.status}"],
+                                                 message: "Cannot cancel order with status: #{@order.status}")
       end
 
-      if @order.update(status: :cancelled)
-        Services::Result.new(success?: true, data: { order: @order }, status: :ok,
-                             message: 'Order cancelled successfully.')
-      else
-        Services::Result.new(success?: false, errors: @order.errors.full_messages, status: :unprocessable_content,
-                             message: 'Order cancellation failed due to validation errors.')
+      with_error_handling do
+        if @order.update(status: :cancelled)
+          return success_result(data: { order: @order }, message: 'Order cancelled successfully')
+        end
+
+        unprocessable_content(record: @order, message: 'Order cancellation failed due to validation errors.')
       end
-    rescue StandardError => e
-      Rails.logger.error("Order cancellation failed for order ID #{@order.id}: #{e.message}")
-      Services::Result.new(success?: false, errors: ['An unexpected error occurred during order cancellation.'],
-                           status: :internal_server_error, message: 'An unexpected error occurred.')
     end
 
     def destroy
-      @order.destroy
-      Services::Result.new(success?: true, status: :no_content)
-    rescue StandardError => e
-      Rails.logger.error("Failed to destroy order ID #{@order.id}: #{e.message}")
-      Services::Result.new(success?: false, errors: ['An unexpected error occurred while destroying the order.'],
-                           status: :internal_server_error, message: 'An unexpected error occurred.')
+      with_error_not_destroyed_handling do
+        @order.destroy
+        destroy_success_result(message: 'Successfully destroyed order')
+      end
     end
 
-    def add_product(product, quantity)
-      unless @order.status_pending? || @order.status_processing?
-        return Services::Result.new(
-          success?: false,
-          errors: ["Cannot modify order with status: #{@order.status}"],
-          status: :unprocessable_content,
-          message: "Cannot modify order with status: #{@order.status}."
-        )
-      end
-
+    def add(product, quantity)
       unless product && quantity.to_i.positive?
-        return Services::Result.new(success?: false, errors: ['Invalid product or quantity.'],
-                                    status: :unprocessable_content, message: 'Failed to add product: invalid input.')
+        unprocessable_content_with_errors_result(errors: ['Invalid product or quantity'],
+                                                 message: 'Failed to add product: invalid input.')
       end
 
-      ActiveRecord::Base.transaction do
-        item = @order.items.find_or_initialize_by(product_id: product.id)
-        item.price_at_purchase ||= product.price
-        item.increment!(:quantity, quantity.to_i)
+      result = resolve_status(product)
+      return result if result.errors.present?
 
-        @order.save!
+      with_error_handling do
+        ActiveRecord::Base.transaction do
+          item = @order.items.find_or_initialize_by(product_id: product.id)
+          item.price_at_purchase ||= product.price
+          item.increment!(:quantity, quantity.to_i)
+
+          @order.save!
+        end
+        success_result(data: { order: @order }, message: 'Product added to order successfully')
       end
-
-      Services::Result.new(success?: true, data: { order: @order }, status: :ok,
-                           message: 'Product added to order successfully.')
-    rescue ActiveRecord::RecordInvalid => e
-      Services::Result.new(success?: false, errors: e.record.errors.full_messages, status: :unprocessable_content,
-                           message: 'Failed to add product to order due to validation errors.')
-    rescue StandardError => e
-      Rails.logger.error("Failed to add product to order ID #{@order.id}: #{e.message}")
-      Services::Result.new(success?: false, errors: ['An unexpected error occurred while adding product to order.'],
-                           status: :internal_server_error, message: 'An unexpected error occurred.')
     end
 
-    def remove_product(product, quantity = nil)
+    def remove(product, quantity = nil)
+      result = resolve_status(product)
+      return result if result.errors.present?
+
+      with_error_not_destroyed_handling do
+        ActiveRecord::Base.transaction do
+          if quantity.nil?
+            item.destroy!
+          else
+            quantity_to_remove = quantity.to_i
+            unprocessable_result = resolve_quantity(quantity_to_remove)
+            return unprocessable_result if unprocessable_result
+
+            result.item.decrement!(:quantity, quantity_to_remove)
+            result.item.destroy! if item.quantity <= 0
+          end
+          @order.items.reload
+          @order.save!
+        end
+      end
+    end
+
+    def resolve_quantity(quantity_to_remove)
+      if quantity_to_remove <= 0
+        return unprocessable_content_with_errors_result(errors: ['Quantity must be a positive number.'],
+                                                        message: 'Invalid quantity')
+      end
+      return unless quantity_to_remove > item.quantity
+
+      unprocessable_content_with_errors_result(
+        errors: ["Cannot remove #{remove_to_remove} items, only #{item.quantity} present."], message: 'Invalid quantity'
+      )
+    end
+
+    def resolve_status(product)
       unless @order.status_pending? || @order.status_processing?
-        return Services::Result.new(
-          success?: false,
-          errors: ["Cannot modify order with status: #{@order.status}"],
-          status: :unprocessable_content,
-          message: "Cannot modify order with status: #{@order.status}."
-        )
+        unprocessable_content_with_errors_result(errors: ["Cannot modify order with status: #{@order.status}"],
+                                                 message: "Cannot modify order with status: #{@order.status}")
       end
       item = @order.items.find_by(product_id: product&.id)
 
-      unless item
-        return Services::Result.new(success?: false, errors: ['Product not found in order.'],
-                                    status: :not_found, message: 'Failed to remove product: product not found.')
-      end
+      return success_result(data: { item: item }, message: 'Found item') if item
 
-      ActiveRecord::Base.transaction do
-        if quantity.nil?
-          item.destroy!
-        else
-          quantity_to_remove = quantity.to_i
-          if quantity_to_remove <= 0
-            return Services::Result.new(success?: false, errors: ['Quantity must be a positive number.'],
-                                        status: :unprocessable_content, message: 'Invalid quantity.')
-          end
-          if quantity_to_remove > item.quantity
-            return Services::Result.new(success?: false, errors: ["Cannot remove #{quantity_to_remove} items, only #{item.quantity} present."],
-                                        status: :unprocessable_content, message: 'Quantity to remove exceeds quantity in order.')
-          end
-
-          item.decrement!(:quantity, quantity_to_remove)
-          item.destroy! if item.quantity <= 0
-        end
-        @order.items.reload
-        @order.save!
-      end
-
-      Services::Result.new(success?: true, data: { order: @order.reload }, status: :ok,
-                           message: 'Product removed from order successfully.')
-    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
-      Services::Result.new(success?: false, errors: e.record.errors.full_messages, status: :unprocessable_content,
-                           message: 'Failed to remove product from order due to validation errors.')
-    rescue StandardError => e
-      Rails.logger.error("Failed to remove product from order ID #{@order.id}: #{e.message}")
-      Services::Result.new(success?: false, errors: ['An unexpected error occurred while removing product from order.'],
-                           status: :internal_server_error, message: 'An unexpected error occurred.')
+      not_found_result(errors: ['Product not found in order'], message: 'Failed to remove product: product not found')
     end
 
     def mark_order_status(status)

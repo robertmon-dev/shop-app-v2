@@ -44,7 +44,7 @@ module Services
     def self.cache_token_with_fallback(token)
       redis.with { |conn| conn.set(cache_key(token), 'active', ex: TOKEN_LIFETIME) }
     rescue Redis::CannotConnectError => e
-      Rails.logger.error("Redis error: Failed to cache JWT - #{e.message}. Token issued without Redis cache.")
+      Rails.logger.error "Redis error: Failed to cache JWT - #{e.message}. Token issued without Redis cache."
     end
 
     def self.blacklist_via_redis(token)

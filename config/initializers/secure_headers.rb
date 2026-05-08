@@ -12,11 +12,13 @@ SecureHeaders::Configuration.default do |config|
   config.csp = {
     report_only: false,
     default_src: ["'none'"],
-    script_src: ["'self'", "'unsafe-inline'"],
+    script_src: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
     style_src: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
     img_src: ["'self'", 'data:'],
     font_src: ["'self'", 'https://fonts.gstatic.com'],
-    connect_src: ["'self'"],
+
+    connect_src: ["'self'", 'http://localhost:3000', 'http://127.0.0.1:3000', 'ws://localhost:3000'],
+
     frame_ancestors: ["'none'"],
     form_action: ["'self'"],
     base_uri: ["'self'"]

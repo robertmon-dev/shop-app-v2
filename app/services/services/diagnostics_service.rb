@@ -26,7 +26,7 @@ module Services
     #   Returns `status: :service_unavailable` and errors if the check fails.
     def self.readiness_probe
       Services::Instrumentor.check_performed(:readiness)
-      ActiveRecord::Base.connection
+      ActiveRecord::Base.connection.execute('SELECT 1')
       { status: :ok, message: 'Application is ready' }
     rescue StandardError => e
       { status: :service_unavailable, errors: ["Readiness check failed: #{e.message}"] }
@@ -42,27 +42,33 @@ module Services
     #   Returns `status: :ok` and a success message with details if all checks pass.
     #   Returns `status: :service_unavailable` with errors and details if any check fails.
     def self.health_probe
-      checks = { database: false, redis: false, errors: [] }
+      Services::Instrumentor.check_performed(:health)
 
-      begin
-        ActiveRecord::Base.connection.execute('SELECT 1')
-        checks[:database] = true
-      rescue StandardError => e
-        checks[:errors] << "Database check failed: #{e.message}"
-      end
+      db_ok, db_err = ping_database
+      redis_ok, redis_err = ping_redis
 
-      begin
-        Redis.current.ping
-        checks[:redis] = true
-      rescue Redis::CannotConnectError => e
-        checks[:errors] << "Redis check failed: #{e.message}"
-      end
+      details = { db: db_ok, redis: redis_ok }
+      errors = [db_err, redis_err]
 
-      if checks[:errors].empty?
-        { status: :ok, message: 'Application is healthy', details: checks.except(:errors) }
+      if errors.empty?
+        { status: :ok, message: 'Application is healthy', details: details }
       else
-        { status: :service_unavailable, errors: checks[:errors], details: checks.except(:errors) }
+        { status: :service_unavailable, errors: errors, details: details }
       end
+    end
+
+    def self.ping_database
+      ActiveRecord::Base.connection.execute('SELECT 1')
+      [true, nil]
+    rescue StandardError => e
+      [false, "Database check failed: #{e.message}"]
+    end
+
+    def self.ping_redis
+      Redis.current.ping
+      [true, nil]
+    rescue Redis::CannotConnectError => e
+      [false, "Redis check failed: #{e.message}"]
     end
   end
 end

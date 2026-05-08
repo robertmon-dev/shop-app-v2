@@ -9,6 +9,9 @@
 # payment processing, or external API interactions
 module Services
   class PasswordResetService
+    extend Concerns::ResultHelpers
+    extend Concerns::Handlers
+
     def self.request(email)
       user = User.find_by(mail: email)
       if user
