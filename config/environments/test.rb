@@ -20,7 +20,7 @@ Rails.application.configure do
 
   # Show full error reports.
   config.consider_all_requests_local = true
-  config.cache_store = :redis_cache_store, { url: ENV['REDIS_URL'], expires_in: 90.minutes }
+  config.cache_store = :redis_cache_store, { url: ENV.fetch('REDIS_URL', nil), expires_in: 90.minutes }
 
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable
@@ -57,17 +57,6 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
-  config.action_mailer.delivery_method = :smtp
-  config.action_mailer.raise_delivery_errors = true
   config.action_mailer.perform_caching = false
-  config.action_mailer.smtp_settings = {
-    address: ENV.fetch('SMTP_ADDRESS'),
-    port: ENV.fetch('SMTP_PORT', 587),
-    user_name: ENV.fetch('SMTP_USERNAME'),
-    password: ENV.fetch('SMTP_PASSWORD'),
-    domain: ENV.fetch('SMTP_DOMAIN'),
-    authentication: :plain,
-    enable_starttls_auto: true,
-    openssl_verify_mode: 'peer'
-  }
+  config.action_mailer.raise_delivery_errors = false
 end
