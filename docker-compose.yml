@@ -1,0 +1,122 @@
+name: shop-on-rails
+
+x-app-env: &app-env
+  env_file:
+    - .env
+  environment:
+    POSTGRES_HOST: db
+    POSTGRES_PORT: 5432
+    REDIS_HOST: redis
+    REDIS_URL: redis://redis:6379/0
+    RABBITMQ_DEFAULT_HOST: rabbitmq
+    RABBITMQ_DEFAULT_PORT: 5672
+    SMTP_ADDRESS: mailpit
+    SMTP_PORT: 1025
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-shop_on_rails_development}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST:-/}
+      RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE:-shop-on-rails-local}
+    ports:
+      - "${RABBITMQ_DEFAULT_PORT:-5673}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15673}:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  # `make up` starts only the services above. The two below run the app itself
+  # inside Docker and are opt-in: `docker compose --profile app up`.
+  app:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: development
+    <<: *app-env
+    command: >
+      bash -c "rm -f tmp/pids/server.pid &&
+               bin/rails db:prepare &&
+               bin/rails server -p 3000 -b 0.0.0.0"
+    volumes:
+      - .:/rails
+      - bundle_data:/usr/local/bundle
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  jobs:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: development
+    <<: *app-env
+    command: bin/jobs
+    volumes:
+      - .:/rails
+      - bundle_data:/usr/local/bundle
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  bundle_data:
