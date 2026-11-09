@@ -162,4 +162,38 @@ RSpec.describe 'Api::V1::Orders', type: :request do
       end
     end
   end
+
+  describe 'PATCH /api/v1/orders/:id/status' do
+    it 'marks the order status as an admin' do
+      patch "/api/v1/orders/#{user_order.id}/status",
+            params: { order: { status: 'shipped' } }.to_json, headers: admin_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(user_order.reload.status_shipped?).to be true
+    end
+
+    it 'is forbidden for a regular user' do
+      patch "/api/v1/orders/#{user_order.id}/status",
+            params: { order: { status: 'shipped' } }.to_json, headers: user_headers
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it 'rejects an unknown status' do
+      patch "/api/v1/orders/#{user_order.id}/status",
+            params: { order: { status: 'teleported' } }.to_json, headers: admin_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+  end
+
+  describe 'PATCH /api/v1/orders/:id/payment_status' do
+    it 'marks the payment status as an admin' do
+      patch "/api/v1/orders/#{user_order.id}/payment_status",
+            params: { order: { payment_status: 'paid' } }.to_json, headers: admin_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(user_order.reload.payment_status_paid?).to be true
+    end
+  end
 end

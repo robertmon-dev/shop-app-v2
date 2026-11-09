@@ -89,7 +89,7 @@ RSpec.describe Order, type: :model do
     it 'recalculates total_amount when an item is destroyed' do
       order = create(:order, user: user)
       item1 = create(:item, order: order, product: product1, quantity: 2, price_at_purchase: 100)
-      item2 = create(:item, order: order, product: product2, quantity: 1, price_at_purchase: 50)
+      create(:item, order: order, product: product2, quantity: 1, price_at_purchase: 50)
       order.reload
       order.save!
       order.reload

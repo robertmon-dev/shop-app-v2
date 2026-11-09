@@ -3,7 +3,7 @@
 require 'swagger_helper'
 
 describe 'Orders API' do
-  let!(:regular_user) { create(:user) }
+  let!(:regular_user) { create(:user, :with_location) }
   let(:regular_user_token) { Services::BearerService.encode({ user_id: regular_user.id }).data[:token] }
   let!(:admin_user) { create(:user, :admin) }
   let(:admin_user_token) { Services::BearerService.encode({ user_id: admin_user.id }).data[:token] }

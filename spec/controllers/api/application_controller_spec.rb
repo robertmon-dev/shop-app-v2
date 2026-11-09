@@ -12,7 +12,8 @@ RSpec.describe Api::ApplicationController, type: :controller do
       render json: { errors: [exception.message], message: 'Resource not found.' }, status: :not_found
     end
     rescue_from ActiveRecord::RecordInvalid do |exception|
-      render json: { errors: exception.record.errors.full_messages, message: 'Validation failed.' }, status: :unprocessable_entity
+      render json: { errors: exception.record.errors.full_messages, message: 'Validation failed.' },
+             status: :unprocessable_entity
     end
     rescue_from Api::ApplicationController::Forbidden do |exception|
       render json: { errors: [exception.message], message: 'Access denied.' }, status: :forbidden
@@ -64,7 +65,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
       it 'allows access to the action' do
         token_result = Services::Result.new(success?: true, data: { payload: { user_id: user.id } })
         allow(bearer_service).to receive(:decode).and_return(token_result)
-        request.headers['Authorization'] = "Bearer valid_token"
+        request.headers['Authorization'] = 'Bearer valid_token'
         get :index
         expect(response).to have_http_status(:ok)
       end
@@ -83,7 +84,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
       it 'returns an unauthorized status' do
         token_result = Services::Result.new(success?: false, errors: ['Invalid token'], status: :unauthorized)
         allow(bearer_service).to receive(:decode).and_return(token_result)
-        request.headers['Authorization'] = "Bearer invalid_token"
+        request.headers['Authorization'] = 'Bearer invalid_token'
         get :index
         expect(response).to have_http_status(:unauthorized)
       end
@@ -93,7 +94,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
       it 'returns an unauthorized status' do
         token_result = Services::Result.new(success?: true, data: { payload: { user_id: -1 } })
         allow(bearer_service).to receive(:decode).and_return(token_result)
-        request.headers['Authorization'] = "Bearer valid_token"
+        request.headers['Authorization'] = 'Bearer valid_token'
         get :index
         expect(response).to have_http_status(:unauthorized)
       end
@@ -104,7 +105,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
       it 'returns a forbidden status' do
         token_result = Services::Result.new(success?: true, data: { payload: { user_id: user.id } })
         allow(bearer_service).to receive(:decode).and_return(token_result)
-        request.headers['Authorization'] = "Bearer valid_token"
+        request.headers['Authorization'] = 'Bearer valid_token'
         get :index
         expect(response).to have_http_status(:forbidden)
       end
@@ -117,7 +118,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
       it 'allows access' do
         token_result = Services::Result.new(success?: true, data: { payload: { user_id: admin.id } })
         allow(bearer_service).to receive(:decode).and_return(token_result)
-        request.headers['Authorization'] = "Bearer admin_token"
+        request.headers['Authorization'] = 'Bearer admin_token'
         get :restricted_action
         expect(response).to have_http_status(:ok)
       end
@@ -127,7 +128,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
       it 'returns a forbidden status' do
         token_result = Services::Result.new(success?: true, data: { payload: { user_id: user.id } })
         allow(bearer_service).to receive(:decode).and_return(token_result)
-        request.headers['Authorization'] = "Bearer user_token"
+        request.headers['Authorization'] = 'Bearer user_token'
         get :restricted_action
         expect(response).to have_http_status(:forbidden)
       end
@@ -138,7 +139,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
     before do
       token_result = Services::Result.new(success?: true, data: { payload: { user_id: user.id } })
       allow(bearer_service).to receive(:decode).and_return(token_result)
-      request.headers['Authorization'] = "Bearer valid_token"
+      request.headers['Authorization'] = 'Bearer valid_token'
     end
 
     it 'rescues from ActiveRecord::RecordNotFound with a 404 status' do
@@ -163,4 +164,3 @@ RSpec.describe Api::ApplicationController, type: :controller do
     end
   end
 end
-

@@ -6,22 +6,6 @@ RSpec.describe Api::V1::OrdersController, type: :controller do
   render_views
 
   before do
-    routes.draw do
-      namespace :api do
-        namespace :v1 do
-          resources :orders, only: %i[index show create update destroy] do
-            member do
-              post 'cancel'
-              post 'products', to: 'orders#add_product'
-              delete 'products/:product_id', to: 'orders#remove_product'
-            end
-            collection do
-              get 'me'
-            end
-          end
-        end
-      end
-    end
     allow(controller).to receive(:authenticate_user!).and_return(true)
   end
 

@@ -44,7 +44,7 @@ RSpec.describe Services::DiagnosticsService, type: :service do
 
     before do
       allow(ActiveRecord::Base).to receive(:connection).and_return(db_connection)
-      allow(Redis).to receive(:current).and_return(redis_client)
+      allow(Redis).to receive(:with).and_yield(redis_client)
     end
 
     context 'when all components are healthy' do

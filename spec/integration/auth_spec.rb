@@ -131,7 +131,6 @@ describe 'Authentication API' do
         required: %w[mail activation_code]
       }
 
-      # Używamy cechy :unactivated i fabryki :activation_code
       let!(:inactive_user) { create(:user, :unactivated) }
       let!(:activation_code) { create(:activation_code, user: inactive_user) }
 

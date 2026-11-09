@@ -5,19 +5,6 @@ require 'rails_helper'
 RSpec.describe Api::V1::CartController, type: :controller do
   render_views
 
-  before do
-    routes.draw do
-      namespace :api do
-        namespace :v1 do
-          get 'cart', to: 'cart#show'
-          post 'cart/add/:product_id', to: 'cart#add'
-          delete 'cart/revoke/:item_id', to: 'cart#revoke'
-          delete 'cart/clear', to: 'cart#clear'
-        end
-      end
-    end
-  end
-
   let!(:user) { create(:user, :with_detail) }
   let!(:product) { create(:product) }
   let!(:cart_item) { create(:item, :in_cart, user: user, product: product) }

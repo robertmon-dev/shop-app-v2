@@ -61,25 +61,38 @@ describe 'Products API' do
             properties: {
               name: { type: :string, example: 'New Awesome Gadget' },
               price: { type: :number, example: 199.99 },
+              vat_rate: { type: :number, example: 0.23 },
+              weight_kg: { type: :number, example: 1.5 },
+              height_cm: { type: :number, example: 10.0 },
+              width_cm: { type: :number, example: 10.0 },
+              length_cm: { type: :number, example: 10.0 },
               description: { type: :string, example: 'The best gadget you have ever seen.' }
             },
-            required: %w[name price]
+            required: %w[name price vat_rate weight_kg height_cm width_cm length_cm]
           }
         }
       }
 
       context 'as an admin' do
         let(:Authorization) { "Bearer #{admin_user_token}" }
-        let(:product_params) { { product: { name: 'Admin Product', price: 100 } } }
+        let(:product_params) do
+          { product: { name: 'Admin Product', price: 100, vat_rate: 0.23, weight_kg: 1.5, height_cm: 10, width_cm: 10,
+                       length_cm: 10 } }
+        end
         response '201', 'product created' do
-          schema '$ref' => '#/components/schemas/Product'
+          schema type: :object,
+                 properties: { product: { '$ref' => '#/components/schemas/Product' } },
+                 required: ['product']
           run_test!
         end
       end
 
       context 'as a regular user' do
         let(:Authorization) { "Bearer #{regular_user_token}" }
-        let(:product_params) { { product: { name: 'User Product', price: 100 } } }
+        let(:product_params) do
+          { product: { name: 'User Product', price: 100, vat_rate: 0.23, weight_kg: 1.5, height_cm: 10, width_cm: 10,
+                       length_cm: 10 } }
+        end
         response '403', 'forbidden' do
           run_test!
         end
@@ -97,7 +110,9 @@ describe 'Products API' do
       parameter name: :id, in: :path, type: :string, format: :uuid, required: true
 
       response '200', 'product found' do
-        schema '$ref' => '#/components/schemas/Product'
+        schema type: :object,
+               properties: { product: { '$ref' => '#/components/schemas/Product' } },
+               required: ['product']
         run_test!
       end
 
@@ -133,7 +148,9 @@ describe 'Products API' do
       context 'as an admin' do
         let(:Authorization) { "Bearer #{admin_user_token}" }
         response '200', 'product updated' do
-          schema '$ref' => '#/components/schemas/Product'
+          schema type: :object,
+                 properties: { product: { '$ref' => '#/components/schemas/Product' } },
+                 required: ['product']
           run_test!
         end
       end
@@ -180,7 +197,9 @@ describe 'Products API' do
         let(:Authorization) { "Bearer #{regular_user_token}" }
         # POPRAWKA 3: Zmieniamy oczekiwany status na 201
         response '201', 'product liked successfully' do
-          schema '$ref' => '#/components/schemas/Product'
+          schema type: :object,
+                 properties: { product: { '$ref' => '#/components/schemas/Product' } },
+                 required: ['product']
           run_test!
         end
       end
@@ -220,7 +239,9 @@ describe 'Products API' do
       let(:Authorization) { "Bearer #{regular_user_token}" }
 
       response '201', 'product rated successfully' do
-        schema '$ref' => '#/components/schemas/Product'
+        schema type: :object,
+               properties: { product: { '$ref' => '#/components/schemas/Product' } },
+               required: ['product']
         run_test!
       end
     end
@@ -252,7 +273,9 @@ describe 'Products API' do
       let(:Authorization) { "Bearer #{regular_user_token}" }
 
       response '201', 'comment added successfully' do
-        schema '$ref' => '#/components/schemas/Product'
+        schema type: :object,
+               properties: { product: { '$ref' => '#/components/schemas/Product' } },
+               required: ['product']
         run_test!
       end
     end

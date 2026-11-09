@@ -5,17 +5,6 @@ require 'rails_helper'
 RSpec.describe Api::V1::AuthController, type: :controller do
   render_views
 
-  before do
-    routes.draw do
-      post 'login' => 'api/v1/auth#login'
-      post 'verify_2fa' => 'api/v1/auth#verify_2fa'
-      patch 'activate' => 'api/v1/auth#activate'
-      patch 'verify' => 'api/v1/auth#verify'
-      post 'request_reset' => 'api/v1/auth#request_reset'
-      patch 'confirm_reset' => 'api/v1/auth#confirm_reset'
-    end
-  end
-
   let(:auth_service) { class_double(Services::AuthenticationService) }
   let(:user_management_service) { class_double(Services::UserManagementService) }
   let(:password_service) { class_double(Services::PasswordResetService) }

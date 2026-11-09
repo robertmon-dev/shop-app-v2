@@ -5,28 +5,6 @@ require 'rails_helper'
 RSpec.describe Api::V1::UsersController, type: :controller do
   render_views
 
-  before do
-    routes.draw do
-      namespace :api do
-        namespace :v1 do
-          resources :users do
-            member do
-              patch :update_location
-              patch :update_details
-              patch :update_entrepreneur_details
-              patch 'role/update', to: 'users#role'
-              get :actions
-            end
-            collection do
-              get :me
-              post :logout
-            end
-          end
-        end
-      end
-    end
-  end
-
   let!(:admin_user) do
     user = create(:user, :admin, :with_detail)
     create(:location, user_detail: user.user_detail)

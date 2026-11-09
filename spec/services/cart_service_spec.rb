@@ -89,10 +89,10 @@ RSpec.describe Services::CartService, type: :service do
       expect { service.remove(cart_item.id) }.to change(Item, :count).by(-1)
     end
 
-    it 'returns a success status for a non-existent cart item' do
+    it 'returns a not_found status for a non-existent cart item' do
       result = service.remove('non-existent-id')
-      expect(result.success?).to be true
-      expect(result.status).to eq(:ok)
+      expect(result.success?).to be false
+      expect(result.status).to eq(:not_found)
     end
   end
 

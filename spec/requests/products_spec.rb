@@ -48,7 +48,10 @@ RSpec.describe 'Api::V1::Products', type: :request do
   describe 'GET /api/v1/products/:id' do
     context 'when product exists' do
       it 'returns the product' do
-        allow(Services::ProductCachingService).to receive(:fetch_one).with(product.id.to_s).and_return(product)
+        allow(Services::ProductCachingService).to receive(:fetch_one).with(product.id.to_s).and_return(
+          Services::Result.new(success?: true, data: { product: product }, status: :ok,
+                               message: 'Product has been found')
+        )
 
         get "/api/v1/products/#{product.id}"
         expect(response).to have_http_status(:ok)
@@ -58,7 +61,10 @@ RSpec.describe 'Api::V1::Products', type: :request do
 
     context 'when product does not exist' do
       it 'returns a not found error' do
-        allow(Services::ProductCachingService).to receive(:fetch_one).with('non-existent').and_return(nil)
+        allow(Services::ProductCachingService).to receive(:fetch_one).with('non-existent').and_return(
+          Services::Result.new(success?: false, errors: ['Product not found'], status: :not_found,
+                               message: 'Product not found')
+        )
 
         get '/api/v1/products/non-existent'
         expect(response).to have_http_status(:not_found)
@@ -183,6 +189,35 @@ RSpec.describe 'Api::V1::Products', type: :request do
         post "/api/v1/products/#{product.id}/comment", headers: user_headers, params: comment_params
         expect(response).to have_http_status(:ok)
       end
+    end
+  end
+
+  describe 'POST /api/v1/products/:id/create_photo' do
+    let(:image) do
+      Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/files/test_image.png'), 'image/png')
+    end
+
+    it 'attaches a photo to the product as an admin' do
+      expect do
+        post "/api/v1/products/#{product.id}/create_photo", params: { image: image },
+                                                            headers: admin_headers.except('Content-Type')
+      end.to change(ProductPhoto, :count).by(1)
+
+      expect(response).to have_http_status(:created)
+      expect(json['product_photo']['id']).to be_present
+    end
+
+    it 'is forbidden for a regular user' do
+      post "/api/v1/products/#{product.id}/create_photo", params: { image: image },
+                                                          headers: user_headers.except('Content-Type')
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it 'rejects a request without an image' do
+      post "/api/v1/products/#{product.id}/create_photo", headers: admin_headers.except('Content-Type')
+
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 end

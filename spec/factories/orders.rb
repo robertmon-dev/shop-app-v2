@@ -57,3 +57,36 @@ FactoryBot.define do
     order { nil }
   end
 end
+
+FactoryBot.define do
+  factory :invoice do
+    association :user
+    association :order
+    association :payment
+    association :location
+
+    sequence(:invoice_number) { |n| "FV/2026/01/#{n}" }
+    buyer_name { 'Test Buyer' }
+    buyer_tax_id { '1234567890' }
+    full_address { 'Testowa 1, 00-001 Warsaw, Poland' }
+    sale_date { Time.current }
+    due_date { 14.days.from_now }
+    total_net { 100.00 }
+    tax_value { 23.00 }
+    total_gross { 123.00 }
+  end
+
+  factory :invoice_item do
+    association :invoice
+    association :product
+
+    name { 'Test Item' }
+    quantity { 2 }
+    unit_of_measure { 'szt.' }
+    net_price { 50.00 }
+    vat_rate { 0.23 }
+    total_net_price { 100.00 }
+    total_vat_price { 23.00 }
+    total_gross_price { 123.00 }
+  end
+end

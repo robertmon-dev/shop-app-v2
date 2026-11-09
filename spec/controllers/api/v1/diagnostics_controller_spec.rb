@@ -6,18 +6,6 @@ RSpec.describe Api::V1::DiagnosticsController, type: :controller do
   render_views
 
   before do
-    routes.draw do
-      namespace :api do
-        namespace :v1 do
-          get 'diagnostics/readiness', to: 'diagnostics#readiness'
-          get 'diagnostics/health', to: 'diagnostics#health'
-          get 'diagnostics/metrics', to: 'diagnostics#metrics'
-        end
-      end
-    end
-  end
-
-  before do
     allow(Services::DiagnosticsService).to receive(:readiness_probe).and_return(
       status: :ok, message: 'Application is ready', errors: [], details: {}
     )

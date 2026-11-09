@@ -6,13 +6,6 @@ RSpec.describe Api::V1::PaymentsController, type: :controller do
   render_views
 
   before do
-    routes.draw do
-      namespace :api do
-        namespace :v1 do
-          resources :payments, only: %i[index show create]
-        end
-      end
-    end
     allow(controller).to receive(:authenticate_user!).and_return(true)
   end
 

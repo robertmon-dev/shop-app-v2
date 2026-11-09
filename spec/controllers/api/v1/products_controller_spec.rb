@@ -6,17 +6,6 @@ RSpec.describe Api::V1::ProductsController, type: :controller do
   render_views
 
   before do
-    routes.draw do
-      namespace :api do
-        namespace :v1 do
-          resources :products do
-            post 'like', on: :member
-            post 'rate', on: :member
-            post 'comment', on: :member
-          end
-        end
-      end
-    end
     allow(controller).to receive(:authenticate_user!).and_return(true)
   end
 
@@ -70,7 +59,10 @@ RSpec.describe Api::V1::ProductsController, type: :controller do
                            message: 'Comment added successfully.')
     )
 
-    allow(Services::ProductCachingService).to receive(:fetch_one).and_return(product)
+    allow(Services::ProductCachingService).to receive(:fetch_one).and_return(
+      Services::Result.new(success?: true, data: { product: product }, status: :ok,
+                           message: 'Product has been found')
+    )
   end
 
   describe 'GET #index' do
@@ -113,7 +105,10 @@ RSpec.describe Api::V1::ProductsController, type: :controller do
 
     context 'when product is not found' do
       before do
-        allow(Services::ProductCachingService).to receive(:fetch_one).and_return(nil)
+        allow(Services::ProductCachingService).to receive(:fetch_one).and_return(
+          Services::Result.new(success?: false, errors: ['Product not found'], status: :not_found,
+                               message: 'Product not found')
+        )
       end
 
       it 'returns not found status' do

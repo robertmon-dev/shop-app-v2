@@ -38,6 +38,13 @@ FactoryBot.define do
       end
     end
 
+    trait :with_location do
+      after(:create) do |user|
+        detail = user.user_detail || create(:user_detail, user: user)
+        create(:location, user_detail: detail)
+      end
+    end
+
     trait :with_full_details do
       after(:create) do |user|
         create(:user_detail, user: user, entrepreneur_detail: create(:entrepreneur_detail))

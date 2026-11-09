@@ -7,9 +7,7 @@ RSpec.describe Product, type: :model do
     fixture_path = Rails.root.join('spec/fixtures/files')
     FileUtils.mkdir_p(fixture_path) unless File.directory?(fixture_path)
     unless File.exist?(fixture_path.join('test_image.png'))
-      File.open(fixture_path.join('test_image.png'), 'w') do |f|
-        f.write('fake image data')
-      end
+      File.write(fixture_path.join('test_image.png'), 'fake image data')
     end
   end
 

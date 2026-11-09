@@ -61,7 +61,7 @@ describe 'Payments API' do
           schema '$ref' => '#/components/schemas/Payment'
 
           before do
-            allow(Services::PaymentProcessingService).to receive(:call).and_return(
+            allow(Services::PaymentCreationService).to receive(:call).and_return(
               Services::Result.new(success?: true, status: :created,
                                    data: { payment: create(:payment, :paid, order: order) })
             )
