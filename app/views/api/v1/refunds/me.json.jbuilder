@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-json.cache! ['refunds_me', @refund.map(&:id).sort, @refunds.maximum(:updated_at) || Time.current, params[:page]] do
-  json.orders @refunds do |refund|
+json.cache! ['refunds_me', @refunds.map(&:id).sort, @refunds.maximum(:updated_at) || Time.current, params[:page]] do
+  json.refunds @refunds do |refund|
     json.partial! 'api/v1/refunds/refund', refund: refund
   end
 

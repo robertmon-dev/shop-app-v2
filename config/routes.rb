@@ -3,6 +3,7 @@
 Rails.application.routes.draw do
   mount Rswag::Ui::Engine => '/api_docs'
   mount Rswag::Api::Engine => '/api_docs'
+
   namespace :api, defaults: { format: :json } do
     namespace :v1 do
       scope :auth, controller: :auth do
@@ -26,6 +27,7 @@ Rails.application.routes.draw do
       end
 
       post 'stripe_payments_webhook/handle', to: 'stripe_payments_webhook#handle'
+      post 'n8n_webhook/handle', to: 'n8n_webhook#handle'
 
       resources :users, controller: :users, only: %i[create index show update destroy] do
         collection do
@@ -42,6 +44,18 @@ Rails.application.routes.draw do
         end
       end
 
+      resources :categories, controller: :products, only: [] do
+        collection do
+          get '/', action: :available_categories
+          post '/', action: :create_category
+        end
+
+        member do
+          patch '/', action: :update_category
+          delete '/', action: :destroy_category
+        end
+      end
+
       resources :products, controller: :products, only: %i[index create show update destroy] do
         member do
           post 'like'
@@ -53,14 +67,40 @@ Rails.application.routes.draw do
 
       resources :payments, controller: :payments, only: %i[index create show]
 
+      resources :invoices, controller: :invoices, only: %i[index show] do
+        collection do
+          get 'me'
+        end
+
+        member do
+          get 'download'
+        end
+      end
+
       resources :orders, controller: :orders, only: %i[index create show update destroy] do
         collection do
           get 'me'
         end
+
         member do
           post 'cancel'
+          patch 'status', to: 'orders#mark_order_status'
+          patch 'payment_status', to: 'orders#mark_payment_status'
           post 'products', to: 'orders#add_product'
           delete 'products/:product_id', to: 'orders#remove_product', as: :remove_product
+        end
+
+        resources :refunds, controller: :refunds, only: %i[index create]
+      end
+
+      resources :refunds, controller: :refunds, only: %i[show update destroy] do
+        collection do
+          get 'me'
+        end
+
+        member do
+          post 'cancel'
+          post 'complete'
         end
       end
 
