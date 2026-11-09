@@ -33,7 +33,9 @@ module Services
           return not_found_result(errors: ['Order not found for PI'], message: 'Order not found for PI')
         end
 
-        return no_action_needed_result("Order ##{order.id} is already marked as paid.") if order.payment_status_paid?
+        if order.payment_status_paid?
+          return no_action_needed_result(message: "Order ##{order.id} is already marked as paid.")
+        end
 
         ActiveRecord::Base.transaction do
           Payment.create_from_payment_intent(payment_intent)

@@ -1,35 +1,18 @@
 # frozen_string_literal: true
 
-# Provides a collection of service objects that encapsulate specific business logic
-# or external integrations.
-#
-# This module aims to keep controllers thin and models focused on data persistence
-# by housing operations that don't fit naturally within a single model's scope
-# or represent a cross-cutting concern. Examples include authentication flows,
-# payment processing, or external API interactions
 module Services
-  # Handles JWT (JSON Web Token) encoding, decoding, and blacklisting operations.
-  #
-  # This service provides a centralized way to manage authentication tokens,
-  # including setting their lifetime, interacting with Redis for token status
-  # (active/blacklisted), and handling JWT-related errors.
   class BearerService
     extend Concerns::ResultHelpers
     extend Concerns::Handlers
 
     SECRET_KEY = Rails.application.credentials.secret_key_base
-    TOKEN_LIFETIME = 24.hours.to_i
+    TOKEN_LIFETIME = ENV.fetch('TOKEN_LIFETIME_HOURS', 24).to_i.hours.to_i
     KEY_PREFIX = 'jwt_status:'
 
     def self.redis
       @redis ||= Redis.current
     end
 
-    # Encodes a payload into a JWT token and caches its active status.
-    #
-    # @param payload [Hash] The data to be encoded in the token (e.g., {user_id: 1}).
-    # @return [Services::Result] A Result object indicating success or failure,
-    #   containing the token on success or errors on failure.
     def self.encode(payload)
       with_error_handling do
         payload[:exp] = Time.now.to_i + TOKEN_LIFETIME
@@ -61,11 +44,6 @@ module Services
       success_result(data: nil, message: 'Token blacklisted successfully', status: :ok)
     end
 
-    # Decodes a JWT token. Checks if the token is blacklisted before decoding.
-    #
-    # @param token [String] The JWT token to decode.
-    # @return [Services::Result] A Result object containing the decoded payload on success,
-    #   or errors if the token is invalid, expired, or blacklisted.
     def self.decode(token)
       if blacklisted?(token).success? && blacklisted?(token).data[:is_blacklisted]
         return unauthorized_result(errors: ['Token has been blacklisted'], message: 'Token blacklisted.')
@@ -74,10 +52,6 @@ module Services
       decode_payload(token)
     end
 
-    # Blacklists a JWT token.
-    #
-    # @param token [String] The JWT token to blacklist.
-    # @return [Services::Result] A Result object indicating success or failure of blacklisting.
     def self.blacklist!(token)
       decoded_result = decode_payload(token)
       unless decoded_result.success?
@@ -103,11 +77,6 @@ module Services
       BlacklistedToken.exists?(token: token)
     end
 
-    # Checks if a token is blacklisted.
-    #
-    # @param token [String] The JWT token to check.
-    # @return [Services::Result] A Result object indicating if the token is blacklisted
-    #   and the status of the check (e.g., :ok, :internal_server_error).
     def self.blacklisted?(token)
       is_blacklisted = begin
         check_redis_blacklist(token)
@@ -129,11 +98,6 @@ module Services
       "#{KEY_PREFIX}#{token}"
     end
 
-    # Decodes the JWT token payload.
-    #
-    # @param token [String] The JWT token to decode.
-    # @return [Services::Result] A Result object containing the decoded payload on success,
-    #   or errors if the token is invalid or expired.
     def self.decode_payload(token)
       with_jwt_error_handling do
         body = JWT.decode(token, SECRET_KEY, true, { algorithm: 'HS256' })[0]

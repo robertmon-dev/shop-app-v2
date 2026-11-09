@@ -9,9 +9,9 @@ module Services
     class << self
       def produce(payload)
         exchange = channel.fanout(TOPIC_NAME, durable: true)
-        exchange.publish(payload, persistent: true)
+        exchange.publish(payload.to_json, persistent: true, content_type: 'application/json')
         Rails.logger.info "Successfully published message for topic: #{TOPIC_NAME}"
-      rescue Bunny::Exception => e
+      rescue StandardError => e
         Rails.logger.error "Failed to publish message on topic: #{TOPIC_NAME}, #{e.message}"
       end
 

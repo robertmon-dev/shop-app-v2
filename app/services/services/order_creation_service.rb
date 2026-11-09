@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-# Provides a collection of service objects that encapsulate specific business logic
-# or external integrations.
-#
-# This module aims to keep controllers thin and models focused on data persistence
-# by housing operations that don't fit naturally within a single model's scope
-# or represent a cross-cutting concern. Examples include authentication flows,
-# payment processing, or external API interactions
 module Services
   class OrderCreationService
     include Concerns::ResultHelpers
@@ -25,12 +18,11 @@ module Services
 
     def call
       cart_items = find_cart_items
-      if cart_items.empty?
-        return unprocessable_content_with_errors_result(errors: ['Your cart is empty or no items were selected.'],
-                                                        message: 'Your cart is empty or no items were selected.')
-      end
+      return empty_cart_result if cart_items.empty?
 
       user_location = find_user_location
+      return missing_location_result unless user_location
+
       process_order_creation(cart_items, user_location)
     end
 
@@ -48,10 +40,8 @@ module Services
 
     def build_order(cart_items, user_location)
       order_location = create_location_snapshot(user_location)
-      order = @user.orders.build(
-        package_carrier: @package_carrier,
-        location: order_location
-      )
+      order = @user.orders.build(location: order_location)
+      order.package_carrier = @package_carrier if @package_carrier.present?
 
       order.items = cart_items
       order.save!
@@ -75,7 +65,22 @@ module Services
     end
 
     def find_user_location
-      @user.user_detail&.locations&.find_by(id: @location_id)
+      locations = @user.user_detail&.locations
+      return nil if locations.blank?
+
+      @location_id.present? ? locations.find_by(id: @location_id) : locations.first
+    end
+
+    def empty_cart_result
+      unprocessable_content_with_errors_result(errors: ['Your cart is empty or no items were selected.'],
+                                               message: 'Your cart is empty or no items were selected.')
+    end
+
+    def missing_location_result
+      unprocessable_content_with_errors_result(
+        errors: ['A delivery location is required to create an order.'],
+        message: 'A delivery location is required to create an order.'
+      )
     end
   end
 end

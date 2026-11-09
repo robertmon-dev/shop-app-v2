@@ -4,7 +4,7 @@ class InvoiceObserver < ApplicationObserver
   observe :invoice
 
   def after_create(invoice)
-    Rails.logger.info "Invoice has been created with ID: #{invoice.id}"
-    result = Services::InvoicePDFGenerationService.call(invoice)
+    Rails.logger.info "InvoiceObserver: Invoice created (ID: #{invoice.id}, Number: #{invoice.invoice_number})"
+    InvoicePDFCreationJob.perform_later(invoice)
   end
 end
