@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 SecureHeaders::Configuration.default do |config|
-  config.hsts = "max-age=#{6.months.to_i}; includeSubdomains; preload"
+  config.hsts = Rails.env.production? ? "max-age=#{6.months.to_i}; includeSubdomains; preload" : SecureHeaders::OPT_OUT
+
   config.x_frame_options = 'DENY'
   config.x_content_type_options = 'nosniff'
   config.x_xss_protection = '1; mode=block'
@@ -10,14 +11,24 @@ SecureHeaders::Configuration.default do |config|
   config.referrer_policy = 'strict-origin-when-cross-origin'
 
   config.csp = {
+    preserve_schemes: true,
     report_only: false,
+
     default_src: ["'none'"],
     script_src: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
     style_src: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
     img_src: ["'self'", 'data:'],
     font_src: ["'self'", 'https://fonts.gstatic.com'],
 
-    connect_src: ["'self'", 'http://localhost:3000', 'http://127.0.0.1:3000', 'ws://localhost:3000'],
+    connect_src: [
+      "'self'",
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'ws://localhost:3000',
+      'ws://localhost:5173'
+    ],
 
     frame_ancestors: ["'none'"],
     form_action: ["'self'"],
