@@ -1,19 +1,7 @@
 # frozen_string_literal: true
 
-# Provides a collection of service objects that encapsulate specific business logic
-# or external integrations.
-#
-# This module aims to keep controllers thin and models focused on data persistence
-# by housing operations that don't fit naturally within a single model's scope
-# or represent a cross-cutting concern. Examples include authentication flows,
-# payment processing, or external API interactions
 module Services
   class AuthenticationService
-    # Authenticates a user based on email and password.
-    #
-    # @param email [String] The user's email address.
-    # @param password [String] The user's password.
-    # @return [Services::Result] A Result object indicating success or failure of login.
     def self.login(email, password)
       user = User.find_by(mail: email)
       unless user&.active?
@@ -65,11 +53,6 @@ module Services
       )
     end
 
-    # Verifies a two-factor authentication (2FA) code for a user.
-    #
-    # @param user [User] The user object.
-    # @param code [String] The 2FA code.
-    # @return [Services::Result] A Result object indicating success or failure of 2FA verification.
     def self.verify_2fa(user, code)
       return user_not_found_result unless user
 
@@ -118,20 +101,12 @@ module Services
       )
     end
 
-    # Blacklists a user's JWT token.
-    # This method is designed to be called from the UsersController's logout action.
-    #
-    # @param token [String] The JWT token to blacklist.
-    # @return [Services::Result] A Result object indicating success or failure of token blacklisting.
     def self.blacklist_token(token)
       BearerService.blacklist!(token)
     end
 
     private
 
-    # Sends a two-factor authentication code to the user.
-    #
-    # @param user [User] The user object.
     def self.send_2fa_code(user)
       return user_not_found_result unless user
 

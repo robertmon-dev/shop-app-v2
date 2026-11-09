@@ -7,8 +7,8 @@ class Redis
   class << self
     attr_accessor :current
 
-    def with(&block)
-      current.with(&block)
+    def with(&)
+      current.with(&)
     end
   end
 end

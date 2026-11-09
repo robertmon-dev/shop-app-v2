@@ -1,23 +1,11 @@
 # frozen_string_literal: true
 
-# Provides a collection of service objects that encapsulate specific business logic
-# or external integrations.
-#
-# This module aims to keep controllers thin and models focused on data persistence
-# by housing operations that don't fit naturally within a single model's scope
-# or represent a cross-cutting concern. Examples include authentication flows,
-# payment processing, or external API interactions
 module Services
   class UserManagementService
     extend Concerns::CodeValidation
     extend Concerns::ResultHelpers
     extend Concerns::Handlers
 
-    # Activates a user account with an activation code.
-    #
-    # @param user [User] The user to activate.
-    # @param code [String] The activation code sent to the user.
-    # @return [Services::Result] A Result object indicating success or failure of activation.
     def self.activate(user, code)
       return user_not_found_result unless user
       return user_already_activated_result unless user.unactivated?
@@ -31,11 +19,6 @@ module Services
       end
     end
 
-    # Verifies a user account with a verification code.
-    #
-    # @param user [User] The user to verify.
-    # @param code [String] The verification code sent to the user.
-    # @return [Services::Result] A Result object indicating success or failure of verification.
     def self.verify(user, code)
       return user_not_found_result unless user
       return user_already_verified_result unless user.unverified?

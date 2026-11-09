@@ -8,7 +8,6 @@ module Services
       @refund = refund
     end
 
-    def call
-    end
+    def call; end
   end
 end
