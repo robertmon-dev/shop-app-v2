@@ -1,176 +1,178 @@
 # Shop on Rails API
 
-## Table of Contents
-- [Functionality Overview](#functionality-overview)
+API service for users, authorization, products, carts, orders, payments and refunds.
+
+- [Overview](#overview)
 - [Prerequisites](#prerequisites)
-- [Installation and Setup](#installation-and-setup)
-- [Troubleshooting](#troubleshooting)
-- [Directory Structure](#directory-structure)
+- [Setup](#setup)
+- [Make targets](#make-targets)
+- [Environment variables](#environment-variables)
+- [Architecture](#architecture)
 - [Testing](#testing)
-- [Useful Commands](#useful-commands)
-- [Useful Addresses](#useful-addresses)
-- [Actions](#actions)
+- [Addresses](#addresses)
+- [Troubleshooting](#troubleshooting)
 - [License](#license)
 
 ---
 
-## Functionality Overview
-The **Shop on Rails API** is a central API service responsible for managing users, authorization, products, orders, and payments within the application ecosystem. Its primary goal is to provide a robust and secure foundation for all operations.
+## Overview
 
-Key features include:
-- **User Lifecycle Management**: Full support for registration, account activation, verification, and account deletion processes.
-- **Advanced Authorization**:
-    - Generation and validation of secure JWTs.
-    - Support for two-factor authentication (2FA).
-    - Password reset mechanism (xddd).
-- **Product and Order Management**: Full lifecycle for products, shopping carts, orders, and payments.
-- **Access Control (Roles)**: A role-based system (e.g., `admin`, `moderator`) that allows for fine-grained control over access to different parts of the system.
-- **N8n webhooks**: Allowing to integrate easily with outer dependencies.
-- **Activity Tracking**: Recording of key actions performed by users.
+- **User lifecycle** — registration, activation, verification, deletion.
+- **Authorization** — JWT issuing and validation, two-factor authentication, password reset, token blacklisting (Redis with a database fallback).
+- **Catalog and sales** — products, categories, cart, orders, payments (Stripe), refunds, invoices.
+- **Roles** — `regular`, `moderator`, `admin`, enforced with CanCanCan.
+- **Messaging** — RabbitMQ producer/consumer for order events; n8n webhooks for outbound integrations.
+- **Observability** — Prometheus metrics and readiness/health probes under `/api/v1/diagnostics`.
 
 ---
 
 ## Prerequisites
-- **Operating System**: Linux, macOS, or Windows (with WSL2).
-- **Ruby**: Version 3.2.2 or newer.
-- **Rails**: Version 7.1 or newer.
-- **Bundler**: For managing Ruby dependencies.
-- **PostgreSQL**: As the primary database.
-- **Redis**: For caching and background jobs.
-- **Docker Engine**: Version 20.10.0 or newer.
-- **Docker Compose**: For orchestrating containers in the development environment.
+
+- Ruby 3.4.5 (see `.ruby-version`)
+- Bundler
+- Docker Engine 20.10+ with the Compose plugin
+- GNU Make
+
+Postgres, Redis, RabbitMQ and an SMTP catcher all run in Docker; nothing but Ruby is needed on the host.
 
 ---
 
-## Installation and Setup
-1.  Clone the repository:
-    ```bash
-    git clone <your-repository-address>
-    cd <project-name>
-    ```
-2.  Configure environment variables. Copy the example `.env` file and customize it if needed.
-    ```bash
-    cp .env.example .env
-    ```
-3.  Build the Docker images:
-    ```bash
-    docker-compose build
-    ```
-4.  Start the containers in the background:
-    ```bash
-    docker-compose up -d
-    ```
-5.  Prepare the database (create it and run migrations):
-    ```bash
-    docker-compose exec app bin/rails db:create db:migrate
-    ```
+## Setup
 
-Your application is now running and available at `http://localhost:3000`.
+```bash
+git clone <repository>
+cd shop-app
+make setup
+```
+
+`make setup` copies `.env.sample` to `.env` if missing, installs gems, starts the containers, waits for them to become healthy and prepares both the development and test databases.
+
+Fill in the secrets in `.env` afterwards (`RAILS_MASTER_KEY`, Stripe, Twilio). The file is gitignored.
+
+```bash
+make server   # http://localhost:3000
+make test
+```
+
+Host ports are deliberately non-default (Postgres `5433`, Redis `6380`, RabbitMQ `5673`) so the stack can run alongside other local projects. Change them in `.env` if you prefer.
+
+To run the application itself in Docker instead of on the host:
+
+```bash
+make docker-up
+```
+
+---
+
+## Make targets
+
+`make help` lists every target. The ones used most:
+
+| Target | What it does |
+| --- | --- |
+| `make setup` | Full bootstrap from a fresh clone |
+| `make up` / `make down` | Start / stop the infrastructure containers |
+| `make reset` | Destroy containers **and volumes**, then rebuild |
+| `make db-prepare` | Create and migrate development + test databases |
+| `make db-reset` | Drop, recreate, migrate and seed |
+| `make test` | Full RSpec suite |
+| `make spec FILE=spec/models/user_spec.rb` | One file or example |
+| `make lint` / `make lint-fix` | RuboCop |
+| `make security` | Brakeman |
+| `make swagger` | Regenerate `swagger/v1/swagger.yaml` from the integration specs |
+| `make cluster-up` | Three-node RabbitMQ cluster behind HAProxy |
+
+---
+
+## Environment variables
+
+`.env.sample` is the canonical list, grouped by subsystem. Three files are involved:
+
+| File | Tracked | Purpose |
+| --- | --- | --- |
+| `.env.sample` | yes | Template and documentation |
+| `.env` | no | Local development values and secrets |
+| `.env.test` | yes | Test overrides — separate database, separate Redis logical db, dummy third-party keys |
+
+dotenv loads `.env.test` before `.env` in the test environment, so test values win without duplicating secrets.
+
+---
+
+## Architecture
+
+```
+app
+├── controllers/api            ApplicationController + Responding concern
+│   └── v1                     one controller per resource, actions are one-liners
+├── services/services          business logic, every call returns Services::Result
+│   └── concerns               Handlers (error wrapping) + ResultHelpers (result factories)
+├── observers                  rails-observers hooks for side effects
+├── models
+├── jobs                       Solid Queue jobs
+└── views/api/v1               Jbuilder templates, one directory per controller
+```
+
+Controllers do three things: load/authorize the resource, call a service, hand the `Services::Result` to the responder. All rendering decisions live in `Api::Responding`:
+
+```ruby
+def index   = respond_with_view(:index, orders: accessible_orders)
+def create  = respond_with(Services::OrderCreationService.call(**create_params))
+def cancel  = respond_with(order_management_service.cancel)
+def destroy = respond_with_destroy(order_management_service.destroy)
+```
+
+Services never render and never touch `params`; controllers never contain business rules.
+
+---
+
+## Testing
+
+RSpec, with `spec/` laid out as:
+
+| Directory | Type |
+| --- | --- |
+| `spec/models` | model unit specs |
+| `spec/services` | service unit specs |
+| `spec/controllers` | controller specs |
+| `spec/requests` | end-to-end request specs |
+| `spec/integration` | rswag specs that generate the OpenAPI document |
+
+```bash
+make test
+make test-models
+make test-services
+make test-requests
+make test-integration
+make spec FILE=spec/services/cart_service_spec.rb:16
+```
+
+Controller specs must **not** call `routes.draw` unless they define an anonymous `controller do` block — on a named controller spec `routes` is the application route set and `draw` clears it, which breaks routing for every spec that runs afterwards in the same process.
+
+---
+
+## Addresses
+
+| What | Where |
+| --- | --- |
+| API | http://localhost:3000 |
+| Swagger UI | http://localhost:3000/api_docs |
+| Mailpit (captured mail) | http://localhost:8025 |
+| RabbitMQ management | http://localhost:15673 |
+| Prometheus metrics | http://localhost:3000/api/v1/diagnostics/metrics |
 
 ---
 
 ## Troubleshooting
-- **Database Connection Errors**: Ensure the `db` and `redis` containers are running (`docker-compose ps`). Check your `config/database.yml` configuration – the database host should be `db`.
-- **Docker Not Running**: Start the Docker Desktop application or Docker daemon before running `docker-compose` commands.
-- **File Permission Issues**: If you encounter `Permission denied` errors, ensure your `docker-compose.yml` is configured to run the container with your user ID (`user: "${UID}:${GID}"`).
 
----
+- **Port already in use** — another project is holding 5432/6379. Change `POSTGRES_PORT` / `REDIS_PORT` in `.env` and run `make restart`.
+- **Database connection errors** — `make ps` to check health, `make wait` to block until ready.
+- **`PendingMigrationError` in tests** — `make db-prepare`.
+- **Credentials cannot be decrypted** — `RAILS_MASTER_KEY` is missing from `.env`; `config/master.key` is not tracked.
+- **Stale containers after changing compose** — `make reset` (this deletes the volumes).
 
-## Directory Structure
-```
-.
-├── app
-│   ├── controllers
-│   │   └── api/v1
-│   ├── models
-│   ├── views
-│   │   └── api/v1
-│   └── services
-├── config
-│   ├── initializers
-│   └── routes.rb
-├── db
-│   └── migrate
-├── lib
-│   └── tasks
-├── spec
-│   ├── factories
-│   ├── requests
-│   └── swagger_helper.rb
-├── swagger
-│   └── v1
-│       └── swagger.yaml
-├── Dockerfile
-└── docker-compose.yml
-```
-rest of the project folder is created with the rails pattern obviously
----
-
-## Testing
-This project uses RSpec for testing. Tests are a key part of ensuring the API's quality and stability.
-
-- **Running all tests**
-   ```bash
-   docker-compose exec app bundle exec rspec
-   ```
-
-- **Running unit tests (e.g., models)**
-   ```bash
-   docker-compose exec app bundle exec rspec spec/models
-   ```
-
-- **Running request tests (API)**
-   ```bash
-   docker-compose exec app bundle exec rspec spec/requests
-   ```
-The request specs in the `spec/requests` directory also serve as the definitions for the Swagger (Rswag) documentation.
-
----
-
-## Useful Commands
-
-- **Generating keys for JWT (if needed)**
-   Generate your private key:
-   ```bash
-   openssl genpkey -algorithm ED25519 -out private_key.pem
-   ```
-   Then, extract the public key from it:
-   ```bash
-   openssl pkey -in private_key.pem -pubout -out public_key.pem
-   ```
-
-- **Generating Swagger documentation**
-   ```bash
-   docker-compose exec app bin/rails rswag:specs:swaggerize
-   ```
-
-- **Generating migrations and models**
-   ```bash
-   docker-compose exec app bin/rails generate model MyModelName field:type
-   docker-compose exec app bin/rails db:migrate
-   ```
-
-- **Running the Rails console**
-   ```bash
-   docker-compose exec app bin/rails c
-   ```
-
----
-
-## Useful Addresses
-
-- **Rails Application**
-   `http://localhost:3000`
-
-- **Swagger UI Documentation**
-   `http://localhost:3000/api-docs`
-
----
-
-## Actions and updates
-![Alt](https://repobeats.axiom.co/api/embed/0ccd32c70b973168f94e36384a64155cb9867f07.svg "Repobeats analytics image")
 ---
 
 ## License
-© 2025 Robert Moń, Kacper Majda All Rights Reserved.
-Use this stuff whenever you want for non-commercial purposes.
+
+© 2025 Robert Moń, Kacper Majda. All rights reserved.
+Free to use for non-commercial purposes.
