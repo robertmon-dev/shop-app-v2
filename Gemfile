@@ -18,6 +18,8 @@ gem 'bunny'
 gem 'jwt'
 gem 'kamal', require: false
 gem 'kaminari'
+gem 'prawn'
+gem 'prawn-table'
 gem 'prometheus-client'
 gem 'prometheus-client-mmap'
 gem 'rack-attack'

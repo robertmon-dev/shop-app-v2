@@ -1,0 +1,54 @@
+AllCops:
+  TargetRubyVersion: 3.4
+  NewCops: enable
+  Exclude:
+    - "bin/**/*"
+    - "db/schema.rb"
+    - "db/*_schema.rb"
+    - "db/migrate/*_create_active_storage_tables.active_storage.rb"
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "log/**/*"
+    - "storage/**/*"
+    - "node_modules/**/*"
+
+# Controller actions are intentionally endless one-liners delegating to services.
+Style/EndlessMethod:
+  EnforcedStyle: allow_always
+
+Style/Documentation:
+  Enabled: false
+
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+Metrics/MethodLength:
+  Max: 20
+
+Metrics/AbcSize:
+  Max: 25
+
+Metrics/ClassLength:
+  Max: 200
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "config/**/*"
+    - "Rakefile"
+    - "lib/tasks/**/*"
+
+Metrics/ModuleLength:
+  Exclude:
+    - "spec/**/*"
+    - "app/services/services/concerns/**/*"
+
+Layout/LineLength:
+  Max: 120
+
+Naming/PredicateMethod:
+  Enabled: false
+
+Naming/PredicatePrefix:
+  AllowedMethods:
+    - success?
