@@ -2,7 +2,7 @@
 
 class Payment < ApplicationRecord
   belongs_to :order
-  belongs_to :invoice, optional: true
+  has_one :invoice, dependent: :nullify
 
   enum :status, { unpaid: 0, paid: 1, failed: 2, refunded: 3 }, prefix: true, default: :unpaid
 

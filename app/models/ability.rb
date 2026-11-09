@@ -6,6 +6,7 @@ class Ability
   def initialize(user)
     alias_action :update_location, :update_details, :update_entrepreneur_details, to: :update_specifics
     alias_action :me, :logout, :actions, to: :profile_actions
+    alias_action :mark_order_status, :mark_payment_status, to: :mark_status
 
     user ||= User.new
 
@@ -25,6 +26,7 @@ class Ability
       can :show, Payment, order: { user_id: user.id }
       can :create, Refund
       can %i[show cancel], Refund, user_id: user.id
+      can %i[read download], Invoice, user_id: user.id
       can %i[create read cancel], Order, user_id: user.id
     end
 
@@ -33,7 +35,10 @@ class Ability
     elsif user.moderator?
       can :read, :all
       can :update, [Product, Order, Payment, Refund]
+      can :mark_status, Order
+      can %i[complete], Refund
       can :manage, Comment
+      can :manage, Category
     elsif user.regular? || user.entrepreneur?
       can :read, Comment
       can :read, Item, user_id: user.id

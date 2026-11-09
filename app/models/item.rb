@@ -14,11 +14,11 @@ class Item < ApplicationRecord
   after_update :recalculate_order_total
   after_destroy :recalculate_order_total
 
-  private
-
   def subtotal
     quantity * price_at_purchase
   end
+
+  private
 
   def must_belong_to_user_or_order
     errors.add(:base, 'Item must belong to a user (for cart) or an order') unless user_id.present? || order_id.present?
@@ -28,9 +28,6 @@ class Item < ApplicationRecord
   end
 
   def recalculate_order_total
-    return unless order.present?
-
-    order.send(:calculate_total_amount)
-    order.save!
+    order&.recalculate_total!
   end
 end

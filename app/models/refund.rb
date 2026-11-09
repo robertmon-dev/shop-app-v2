@@ -3,7 +3,7 @@
 class Refund < ApplicationRecord
   belongs_to :order
   belongs_to :user
-  has_one :payment
+  belongs_to :payment, optional: true
 
   validates :reason, presence: true
   validates :description, presence: true
