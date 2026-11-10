@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::StripeWebhookService, type: :service do
+RSpec.describe Webhooks::StripeEvents, type: :service do
   describe '.handle' do
     context 'with a "payment_intent.succeeded" event' do
       let!(:user) { create(:user, :with_full_details) }

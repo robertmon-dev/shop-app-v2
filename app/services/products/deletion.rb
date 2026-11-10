@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
-module Services
-  class ProductDeletionService
-    extend Concerns::ResultHelpers
-    extend Concerns::Handlers
+module Products
+  class Deletion < ApplicationService
+    def initialize(product)
+      @product = product
+    end
 
-    def self.call(product)
+    def call
+      return missing_result('Product') unless @product
+
       with_error_not_destroyed_handling do
-        return not_found_result(errors: ['No such product'], message: 'Product deletion failed') unless product
-
         ActiveRecord::Base.transaction do
-          product.destroy!
-
-          Services::ProductCachingService.invalidate_for_product(product)
+          @product.destroy!
+          Caching.invalidate_for_product(@product)
         end
         destroy_success_result(message: 'Product deleted successfully')
       end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Services
+module Diagnostics
   class Instrumentor
     def self.initialize_metrics
       @registry = Prometheus::Client.registry

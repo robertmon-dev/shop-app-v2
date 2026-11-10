@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class InvoiceCreationService
-    include Concerns::Handlers
-    include Concerns::ResultHelpers
-
+module Invoices
+  class Creation < ApplicationService
     PAYMENT_TERM_DAYS = 14
     NUMBER_PREFIX = 'FV'
 

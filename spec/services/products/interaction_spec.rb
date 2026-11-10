@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::ProductInteractionService, type: :service do
+RSpec.describe Products::Interaction, type: :service do
   let!(:user) { create(:user) }
   let!(:product) { create(:product) }
   let(:service) { described_class.new(user) }
@@ -128,7 +128,8 @@ RSpec.describe Services::ProductInteractionService, type: :service do
       it 'returns a failure result for an invalid parent_id' do
         result = service.add_comment(product, 'A comment', -1)
         expect(result.success?).to be false
-        expect(result.errors.first).to eq('Unknown error has occured during the operation')
+        expect(result.status).to eq(:unprocessable_content)
+        expect(result.errors.first).to eq('Invalid parent comment ID')
       end
     end
   end

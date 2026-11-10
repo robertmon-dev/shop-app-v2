@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::Instrumentor, type: :service do
+RSpec.describe Diagnostics::Instrumentor, type: :service do
   subject(:instrumentor) { described_class }
 
   let(:registry_double) { instance_double('Prometheus::Client::Registry', counter: nil, gauge: nil, get: nil) }

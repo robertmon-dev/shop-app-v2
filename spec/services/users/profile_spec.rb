@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::UserProfileService, type: :service do
+RSpec.describe Users::Profile, type: :service do
   let(:user) { create(:user, :with_detail) }
   let(:service) { described_class.new(user) }
 

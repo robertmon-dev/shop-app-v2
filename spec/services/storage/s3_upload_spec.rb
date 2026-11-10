@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::S3UploadService, type: :service do
+RSpec.describe Storage::S3Upload, type: :service do
   describe '.call' do
     it 'stores the data as an Active Storage blob' do
       expect do

@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class UserProfileService
-    include Concerns::ResultHelpers
-    include Concerns::Handlers
-
+module Users
+  class Profile < ApplicationService
     def initialize(user)
       @user = user
     end

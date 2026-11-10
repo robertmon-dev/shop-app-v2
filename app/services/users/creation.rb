@@ -1,18 +1,18 @@
 # frozen_string_literal: true
 
-module Services
-  class UserCreationService
-    extend Concerns::ResultHelpers
-    extend Concerns::Handlers
+module Users
+  class Creation < ApplicationService
+    def initialize(user_params)
+      @user_params = user_params
+    end
 
-    def self.call(user_params)
-      conflict = check_user_params(user_params: user_params)
+    def call
+      conflict = existing_user_conflict
       return conflict if conflict
 
       with_error_handling do
         ActiveRecord::Base.transaction do
-          user = User.new(user_params)
-          user.save!
+          user = User.create!(@user_params)
           user.create_activation_code!(code: SecureRandom.hex(4))
           success_result(data: { user: user }, message: 'User registered succesfully. Activation code sent',
                          status: :created)
@@ -20,14 +20,17 @@ module Services
       end
     end
 
-    def self.check_user_params(user_params:)
-      if User.exists?(mail: user_params[:mail])
-        return conflict_result(errors: ['User with this email already exists'], message: 'User registration failed')
-      end
+    private
 
-      return unless user_params[:phone].present? && User.exists?(phone: user_params[:phone])
+    def existing_user_conflict
+      return registration_conflict('email') if User.exists?(mail: @user_params[:mail])
+      return unless @user_params[:phone].present? && User.exists?(phone: @user_params[:phone])
 
-      conflict_result(errors: ['User with this phone already exists'], message: 'User registration failed')
+      registration_conflict('phone')
+    end
+
+    def registration_conflict(field)
+      conflict_result(errors: ["User with this #{field} already exists"], message: 'User registration failed')
     end
   end
 end

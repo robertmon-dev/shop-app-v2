@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class ProductPhotoCreationService
-    include Concerns::Handlers
-    include Concerns::ResultHelpers
-
+module Products
+  class PhotoCreation < ApplicationService
     PERMITTED_CONTENT_TYPES = %w[image/png image/jpeg image/webp image/gif].freeze
     MAX_BYTES = 10.megabytes
 

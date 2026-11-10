@@ -2,8 +2,8 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::ProductDeletionService, type: :service do
-  let(:caching_service) { class_double(Services::ProductCachingService) }
+RSpec.describe Products::Deletion, type: :service do
+  let(:caching_service) { class_double(Products::Caching) }
 
   before do
     # Stubbing the observer instance as you suggested to prevent its callbacks from running.
@@ -12,7 +12,7 @@ RSpec.describe Services::ProductDeletionService, type: :service do
     allow(ProductObserver.instance).to receive(:after_update)
     allow(ProductObserver.instance).to receive(:after_destroy)
 
-    stub_const('Services::ProductCachingService', caching_service)
+    stub_const('Products::Caching', caching_service)
     allow(caching_service).to receive(:invalidate_for_product)
   end
 

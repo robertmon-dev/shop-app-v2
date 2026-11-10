@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class StripeWebhookService
-    extend Concerns::ResultHelpers
-    extend Concerns::Handlers
-
+module Webhooks
+  class StripeEvents < ApplicationService
     def self.handle(event)
       with_webhook_error_handling do
         dispatch_event(event)
@@ -48,7 +45,7 @@ module Services
 
     def self.handle_payment_intent_failed(payment_intent)
       order = Order.find_by(stripe_payment_intent_id: payment_intent.id)
-      return no_action_needed("Order not found for failed PI #{payment_intent.id}") unless order
+      return no_action_needed_result(message: "Order not found for failed PI #{payment_intent.id}") unless order
 
       order.mark_as_failed!
       log_and_return_success_result("Marked Order ##{order.id} as failed.")
@@ -56,8 +53,8 @@ module Services
 
     def self.handle_charge_refunded(charge)
       payment = Payment.find_by(stripe_charge_id: charge.id)
-      return no_action_needed("Payment not found for refunded Charge #{charge.id}") unless payment
-      return no_action_needed("Payment ##{payment.id} already refunded.") if payment.status_refunded?
+      return no_action_needed_result(message: "Payment not found for refunded Charge #{charge.id}") unless payment
+      return no_action_needed_result(message: "Payment ##{payment.id} already refunded.") if payment.status_refunded?
 
       ActiveRecord::Base.transaction do
         payment.mark_as_refunded!

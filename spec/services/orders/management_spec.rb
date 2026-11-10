@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::OrderManagementService, type: :service do
+RSpec.describe Orders::Management, type: :service do
   before do
     allow_any_instance_of(CartObserver).to receive(:after_create)
     allow_any_instance_of(CartObserver).to receive(:after_update)

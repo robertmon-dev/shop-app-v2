@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class N8nWebhookHandler
-    include Concerns::Handlers
-    include Concerns::ResultHelpers
-
+module Webhooks
+  class N8nHandler < ApplicationService
     EVENT_STATUSES = {
       'shipment.created' => :processing,
       'shipment.shipped' => :shipped,

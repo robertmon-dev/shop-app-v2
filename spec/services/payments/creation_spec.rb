@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::PaymentCreationService, type: :service do
+RSpec.describe Payments::Creation, type: :service do
   let(:user) { create(:user, :with_full_details) }
   let!(:order) { create(:order, :with_items, items_count: 2, user: user) }
 

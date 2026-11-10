@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class OrderCreationService
-    include Concerns::ResultHelpers
-    include Concerns::Handlers
-
+module Orders
+  class Creation < ApplicationService
     def self.call(user:, package_carrier:, location_id:, cart_item_ids: [])
       new(user: user, package_carrier: package_carrier, location_id: location_id, cart_item_ids: cart_item_ids).call
     end

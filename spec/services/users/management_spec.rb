@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::UserManagementService, type: :service do
+RSpec.describe Users::Management, type: :service do
   let!(:user) { create(:user, active: false, verified: false) }
 
   describe '.activate' do

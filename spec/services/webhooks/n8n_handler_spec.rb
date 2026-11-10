@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::N8nWebhookHandler, type: :service do
+RSpec.describe Webhooks::N8nHandler, type: :service do
   let!(:order) { create(:order, status: :pending) }
 
   describe '.call' do

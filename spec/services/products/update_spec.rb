@@ -2,10 +2,10 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::ProductUpdateService, type: :service do
+RSpec.describe Products::Update, type: :service do
   let!(:product) { create(:product, name: 'Old Name') }
-  let(:management_service) { class_double(Services::ProductManagementService) }
-  let(:caching_service) { class_double(Services::ProductCachingService) }
+  let(:management_service) { class_double(Products::PhotoAssignment) }
+  let(:caching_service) { class_double(Products::Caching) }
   let(:valid_params) do
     {
       name: 'New Name',
@@ -15,8 +15,8 @@ RSpec.describe Services::ProductUpdateService, type: :service do
   end
 
   before do
-    stub_const('Services::ProductManagementService', management_service)
-    stub_const('Services::ProductCachingService', caching_service)
+    stub_const('Products::PhotoAssignment', management_service)
+    stub_const('Products::Caching', caching_service)
     allow(management_service).to receive(:assign_photos)
     allow(caching_service).to receive(:invalidate_for_product)
   end
@@ -29,12 +29,12 @@ RSpec.describe Services::ProductUpdateService, type: :service do
         expect(product.reload.price).to eq(199.99)
       end
 
-      it 'calls the ProductManagementService to assign photos' do
+      it 'calls the Products::PhotoAssignment to assign photos' do
         expect(management_service).to receive(:assign_photos).with(product: product, photo_ids: [1, 2])
         described_class.call(product, valid_params)
       end
 
-      it 'calls the ProductCachingService to invalidate caches' do
+      it 'calls the Products::Caching to invalidate caches' do
         expect(caching_service).to receive(:invalidate_for_product).with(product)
         described_class.call(product, valid_params)
       end

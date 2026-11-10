@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::ProductManagementService, type: :service do
+RSpec.describe Products::PhotoAssignment, type: :service do
   let!(:product) { create(:product) }
 
   describe '.assign_photos' do

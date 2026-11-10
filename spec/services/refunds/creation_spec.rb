@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::RefundCreationService, type: :service do
+RSpec.describe Refunds::Creation, type: :service do
   let(:user) { create(:user) }
   let(:order) { create(:order, user: user, status: :delivered, payment_status: :paid) }
   let(:refund_params) { { reason: 'damaged', description: 'Arrived broken' } }

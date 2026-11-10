@@ -2,10 +2,8 @@
 
 require 'twilio-ruby'
 
-module Services
-  class SmsService
-    extend Concerns::Handlers
-
+module Notifications
+  class Sms < ApplicationService
     class << self
       def dial(to:, body:)
         with_twilio_error_handling do

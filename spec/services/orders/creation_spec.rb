@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::OrderCreationService, type: :service do
+RSpec.describe Orders::Creation, type: :service do
   describe '#call' do
     let!(:user) { create(:user, :with_detail) }
     let!(:location) { user.user_detail.locations.create(attributes_for(:location)) }

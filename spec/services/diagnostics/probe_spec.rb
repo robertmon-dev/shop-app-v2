@@ -2,8 +2,8 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::DiagnosticsService, type: :service do
-  let(:instrumentor) { class_double(Services::Instrumentor).as_stubbed_const }
+RSpec.describe Diagnostics::Probe, type: :service do
+  let(:instrumentor) { class_double(Diagnostics::Instrumentor).as_stubbed_const }
 
   before do
     allow(instrumentor).to receive(:check_performed)

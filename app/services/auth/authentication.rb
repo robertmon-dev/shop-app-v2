@@ -27,6 +27,13 @@ module Auth
         unexpected_error_result('An unexpected error occurred during 2FA verification.')
       end
 
+      def resend_2fa_code(user)
+        return user_not_found_result unless user
+
+        send_2fa_code(user)
+        success_result(message: 'Two-factor authentication code resent successfully')
+      end
+
       def blacklist_token(token)
         Bearer.blacklist!(token)
       end

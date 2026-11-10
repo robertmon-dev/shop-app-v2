@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class S3UploadService
-    include Concerns::Handlers
-    include Concerns::ResultHelpers
-
+module Storage
+  class S3Upload < ApplicationService
     DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 
     def self.call(**) = new(**).call

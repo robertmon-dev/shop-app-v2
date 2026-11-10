@@ -2,21 +2,21 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::AuthenticationService, type: :service do
+RSpec.describe Auth::Authentication, type: :service do
   let(:password) { 'password' }
   let(:token) { 'sample.jwt.token' }
 
-  let(:success_token_result) { Services::Result.new(success?: true, data: { token: token }) }
-  let(:failed_token_result) { Services::Result.new(success?: false, errors: ['Token generation failed']) }
-  let(:bearer_service_double) { double('BearerService') }
+  let(:success_token_result) { ApplicationService::Result.new(success?: true, data: { token: token }) }
+  let(:failed_token_result) { ApplicationService::Result.new(success?: false, errors: ['Token generation failed']) }
+  let(:bearer_service_double) { double('Auth::Bearer') }
   let(:sms_service_double) { double('SMSService') }
   let(:user_mailer_double) { double('UserMailer') }
   let(:mailer_delivery_double) { double('ActionMailer::MessageDelivery') }
   let(:redis_double) { double('Redis') }
 
   before do
-    stub_const('Services::BearerService', bearer_service_double)
-    stub_const('Services::SmsService', sms_service_double)
+    stub_const('Auth::Bearer', bearer_service_double)
+    stub_const('Notifications::Sms', sms_service_double)
 
     stub_const('UserMailer', user_mailer_double)
 
@@ -101,10 +101,21 @@ RSpec.describe Services::AuthenticationService, type: :service do
       expect(SecondFactorCode.find_by(id: db_code.id)).to be_nil
       expect(result.success?).to be true
     end
+
+    [nil, ''].each do |blank_code|
+      it "rejects a #{blank_code.inspect} code even when no 2FA code is pending" do
+        allow(redis_double).to receive(:get).and_return(nil)
+        result = described_class.verify_2fa(user, blank_code)
+
+        expect(result.success?).to be false
+        expect(result.status).to eq(:unauthorized)
+        expect(bearer_service_double).not_to have_received(:encode)
+      end
+    end
   end
 
   describe '.blacklist_token' do
-    it 'calls BearerService.blacklist!' do
+    it 'calls Auth::Bearer.blacklist!' do
       described_class.blacklist_token(token)
       expect(bearer_service_double).to have_received(:blacklist!).with(token)
     end

@@ -3,11 +3,8 @@
 require 'prawn'
 require 'prawn/table'
 
-module Services
-  class InvoicePDFGenerationService
-    include Concerns::Handlers
-    include Concerns::ResultHelpers
-
+module Invoices
+  class PDFGeneration < ApplicationService
     HEADERS = ['Lp.', 'Usługa/Produkt', 'Ilość', 'J.m.', 'Cena jedn. netto', 'Wartość netto', 'VAT',
                'Wartość brutto'].freeze
 

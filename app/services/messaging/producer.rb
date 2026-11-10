@@ -2,7 +2,7 @@
 
 require 'bunny'
 
-module Services
+module Messaging
   class Producer
     TOPIC_NAME = ENV.fetch('RABBIT_TOPIC', 'orders.events')
 

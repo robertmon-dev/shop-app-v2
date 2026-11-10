@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class OrderManagementService
-    include Concerns::Handlers
-    include Concerns::ResultHelpers
-
+module Orders
+  class Management < ApplicationService
     def initialize(order)
       @order = order
     end

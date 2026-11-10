@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class PaymentCreationService
-    extend Concerns::Handlers
-    extend Concerns::ResultHelpers
-
+module Payments
+  class Creation < ApplicationService
     class << self
       def call(user:, order_id:)
         validate_and_find_order(user: user, order_id: order_id).then { |order| create_or_update_payment_intent(order) }

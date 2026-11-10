@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::InvoiceCreationService, type: :service do
+RSpec.describe Invoices::Creation, type: :service do
   let(:user) { create(:user, :with_location) }
   let(:location) { user.user_detail.locations.first }
   let(:product) { create(:product, price: 100, vat_rate: 0.23) }

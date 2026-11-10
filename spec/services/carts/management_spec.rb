@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::CartService, type: :service do
+RSpec.describe Carts::Management, type: :service do
   let(:user) { create(:user) }
   let(:product) { create(:product, price: 19.99) }
   let(:service) { described_class.new(user) }

@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class CategoryManagementService
-    extend Concerns::Handlers
-    extend Concerns::ResultHelpers
-
+module Categories
+  class Management < ApplicationService
     def self.create(category_params)
       with_error_not_destroyed_handling do
         category = Category.new(category_params)
@@ -17,7 +14,7 @@ module Services
     end
 
     def self.update(category, category_params)
-      return not_found_result(errors: ['Category not found'], message: 'Category not found') unless category
+      return missing_result('Category') unless category
 
       with_error_handling do
         category.update!(category_params)
@@ -26,7 +23,7 @@ module Services
     end
 
     def self.destroy(category)
-      return not_found_result(errors: ['Category not found'], message: 'Category not found') unless category
+      return missing_result('Category') unless category
 
       with_error_not_destroyed_handling do
         category.destroy!

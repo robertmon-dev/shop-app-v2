@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::ProductPhotoCreationService, type: :service do
+RSpec.describe Products::PhotoCreation, type: :service do
   let(:product) { create(:product) }
 
   def upload(filename: 'test_image.png', type: 'image/png')

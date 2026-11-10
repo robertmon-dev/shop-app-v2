@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::ProductCachingService, type: :service do
+RSpec.describe Products::Caching, type: :service do
   let!(:product) { create(:product) }
   let(:cache_store) { Rails.cache }
 

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-module Services
-  class DiagnosticsService
+module Diagnostics
+  class Probe
     def self.readiness_probe
-      Services::Instrumentor.check_performed(:readiness)
+      Diagnostics::Instrumentor.check_performed(:readiness)
       ActiveRecord::Base.connection.execute('SELECT 1')
 
       { status: :ok, message: 'Application is ready' }
@@ -12,7 +12,7 @@ module Services
     end
 
     def self.health_probe
-      Services::Instrumentor.check_performed(:health)
+      Diagnostics::Instrumentor.check_performed(:health)
 
       database_ok, database_error = ping_database
       redis_ok, redis_error = ping_redis

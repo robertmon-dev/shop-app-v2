@@ -2,14 +2,14 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::BearerService, type: :service do
+RSpec.describe Auth::Bearer, type: :service do
   let(:payload) { { user_id: 1, name: 'Test User' } }
   let(:secret_key) { 'test_secret_key' }
   let(:token) { JWT.encode(payload.merge(exp: Time.now.to_i + 3600), secret_key, 'HS256') }
   let(:redis_double) { double('Redis') }
 
   before do
-    stub_const('Services::BearerService::SECRET_KEY', secret_key)
+    stub_const('Auth::Bearer::SECRET_KEY', secret_key)
     allow(described_class).to receive(:redis).and_return(redis_double)
     allow(Rails.logger).to receive(:error)
     allow(Rails.logger).to receive(:warn)
@@ -41,7 +41,7 @@ RSpec.describe Services::BearerService, type: :service do
   describe '.decode' do
     context 'when token is valid and not blacklisted' do
       it 'decodes the token successfully' do
-        allow(described_class).to receive(:blacklisted?).with(token).and_return(Services::Result.new(success?: true,
+        allow(described_class).to receive(:blacklisted?).with(token).and_return(ApplicationService::Result.new(success?: true,
                                                                                                      data: { is_blacklisted: false }))
         result = described_class.decode(token)
 
@@ -52,7 +52,7 @@ RSpec.describe Services::BearerService, type: :service do
 
     context 'when token is blacklisted' do
       it 'returns an unauthorized error' do
-        allow(described_class).to receive(:blacklisted?).with(token).and_return(Services::Result.new(success?: true,
+        allow(described_class).to receive(:blacklisted?).with(token).and_return(ApplicationService::Result.new(success?: true,
                                                                                                      data: { is_blacklisted: true }))
         result = described_class.decode(token)
 
@@ -67,7 +67,7 @@ RSpec.describe Services::BearerService, type: :service do
       let(:expired_token) { JWT.encode(expired_payload, secret_key, 'HS256') }
 
       it 'returns an unauthorized error' do
-        allow(described_class).to receive(:blacklisted?).with(expired_token).and_return(Services::Result.new(
+        allow(described_class).to receive(:blacklisted?).with(expired_token).and_return(ApplicationService::Result.new(
                                                                                           success?: true, data: { is_blacklisted: false }
                                                                                         ))
         result = described_class.decode(expired_token)

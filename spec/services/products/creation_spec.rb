@@ -2,9 +2,9 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::ProductCreationService, type: :service do
-  let(:management_service) { class_double(Services::ProductManagementService) }
-  let(:caching_service) { class_double(Services::ProductCachingService) }
+RSpec.describe Products::Creation, type: :service do
+  let(:management_service) { class_double(Products::PhotoAssignment) }
+  let(:caching_service) { class_double(Products::Caching) }
   let(:valid_params) do
     {
       name: 'New Gadget',
@@ -20,8 +20,8 @@ RSpec.describe Services::ProductCreationService, type: :service do
   end
 
   before do
-    stub_const('Services::ProductManagementService', management_service)
-    stub_const('Services::ProductCachingService', caching_service)
+    stub_const('Products::PhotoAssignment', management_service)
+    stub_const('Products::Caching', caching_service)
     allow(management_service).to receive(:assign_photos)
     allow(caching_service).to receive(:invalidate_for_product)
   end
@@ -34,7 +34,7 @@ RSpec.describe Services::ProductCreationService, type: :service do
         end.to change(Product, :count).by(1)
       end
 
-      it 'calls the ProductManagementService to assign photos' do
+      it 'calls the Products::PhotoAssignment to assign photos' do
         expect(management_service).to receive(:assign_photos).with(
           product: an_instance_of(Product),
           photo_ids: [1, 2]
@@ -42,7 +42,7 @@ RSpec.describe Services::ProductCreationService, type: :service do
         described_class.call(valid_params)
       end
 
-      it 'calls the ProductCachingService to invalidate the cache' do
+      it 'calls the Products::Caching to invalidate the cache' do
         expect(caching_service).to receive(:invalidate_for_product)
         described_class.call(valid_params)
       end

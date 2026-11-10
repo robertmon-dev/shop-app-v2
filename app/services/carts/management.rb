@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class CartService
-    include Concerns::Handlers
-    include Concerns::ResultHelpers
-
+module Carts
+  class Management < ApplicationService
     def initialize(user)
       @user = user
     end
@@ -12,7 +9,7 @@ module Services
     def add(product_id, quantity)
       with_error_handling do
         product = Product.find_by(id: product_id)
-        next not_found_result(errors: ['Product not found'], message: 'Product not found') unless product
+        next missing_result('Product') unless product
 
         quantity = quantity.to_i
         next invalid_add_quantity_result unless quantity.positive?

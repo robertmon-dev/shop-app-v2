@@ -16,6 +16,11 @@ AllCops:
 Style/EndlessMethod:
   EnforcedStyle: allow_always
 
+# Service objects keep their own state and never need the parent's initializer.
+Lint/MissingSuper:
+  Exclude:
+    - "app/services/**/*"
+
 Style/Documentation:
   Enabled: false
 

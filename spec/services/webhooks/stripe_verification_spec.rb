@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::StripeWebhookVerificationService, type: :service do
+RSpec.describe Webhooks::StripeVerification, type: :service do
   let(:payload) { { id: 'evt_123', type: 'charge.succeeded' }.to_json }
   let(:sig_header) { 't=1492774577,v1=...,v0=...' }
   let(:endpoint_secret) { 'whsec_...' }

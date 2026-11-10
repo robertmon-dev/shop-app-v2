@@ -3,7 +3,7 @@
 require 'rails_helper'
 require 'twilio-ruby'
 
-RSpec.describe Services::SmsService, type: :service do
+RSpec.describe Notifications::Sms, type: :service do
   let!(:user) { create(:user, phone: '+15005550006') }
   let(:twilio_credentials) do
     {
@@ -20,8 +20,8 @@ RSpec.describe Services::SmsService, type: :service do
   module Twilio; module REST; class TwilioError < StandardError; end; end; end
 
   before do
-    stub_const('Services::SmsService::TWILIO_CLIENT', twilio_client)
-    Services::SmsService.instance_variable_set(:@client, nil)
+    stub_const('Notifications::Sms::TWILIO_CLIENT', twilio_client)
+    Notifications::Sms.instance_variable_set(:@client, nil)
 
     allow(Rails.application.credentials).to receive(:twilio).and_return(twilio_credentials)
     allow(Twilio::REST::Client).to receive(:new).and_return(twilio_client)

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class ProductManagementService
+module Products
+  class PhotoAssignment < ApplicationService
     def self.assign_photos(product:, photo_ids:)
       return if photo_ids.blank?
 

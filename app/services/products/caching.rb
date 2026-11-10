@@ -1,50 +1,34 @@
 # frozen_string_literal: true
 
-module Services
-  class ProductCachingService
-    extend Concerns::Handlers
-    extend Concerns::ResultHelpers
-
+module Products
+  class Caching < ApplicationService
     INDEX_KEY_PREFIX = 'products:page'
     SHOW_KEY_PREFIX = 'product'
     VERSION_KEY = 'products:version'
     CACHE_EXPIRATION = 1.hour
 
+    ALL_MESSAGES = { success: 'Products have been found', failure: 'No products found',
+                     errors: ['Products not found'] }.freeze
+    ONE_MESSAGES = { success: 'Product has been found', failure: 'Product not found',
+                     errors: ['Product not found'] }.freeze
+
     def self.fetch_all(page = 1)
-      perform_caching_flow(
-        cache_key_proc: -> { index_cache_key(page) },
-        db_query_proc: -> { db_query_for_all(page) },
-        result_key: :products,
-        success_message: 'Products have been found',
-        failure_message: 'No products found',
-        errors: ['Products not found']
-      )
+      perform_caching_flow(cache_key_proc: -> { index_cache_key(page) }, result_key: :products,
+                           messages: ALL_MESSAGES) { db_query_for_all(page) }
     end
 
     def self.fetch_one(id)
-      perform_caching_flow(
-        cache_key_proc: -> { show_cache_key(id) },
-        db_query_proc: -> { db_query_for_one(id) },
-        result_key: :product,
-        success_message: 'Product has been found',
-        failure_message: 'Product not found',
-        errors: ['Product not found']
-      )
+      perform_caching_flow(cache_key_proc: -> { show_cache_key(id) }, result_key: :product,
+                           messages: ONE_MESSAGES) { db_query_for_one(id) }
     end
 
-    def self.perform_caching_flow(cache_key_proc:, db_query_proc:, result_key:, success_message:, errors:,
-                                  failure_message:)
-      data = with_redis_fallback(db_query_proc) do
-        Rails.cache.fetch(cache_key_proc.call, expires_in: CACHE_EXPIRATION) do
-          db_query_proc.call
-        end
+    def self.perform_caching_flow(cache_key_proc:, result_key:, messages:, &db_query)
+      data = with_redis_fallback(db_query) do
+        Rails.cache.fetch(cache_key_proc.call, expires_in: CACHE_EXPIRATION, &db_query)
       end
+      return not_found_result(errors: messages[:errors], message: messages[:failure]) if data.blank?
 
-      if data.present?
-        success_result(data: { result_key => data }, message: success_message)
-      else
-        not_found_result(errors: errors, message: failure_message)
-      end
+      success_result(data: { result_key => data }, message: messages[:success])
     end
 
     def self.invalidate_for_product(product)

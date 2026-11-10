@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::InvoicePDFGenerationService, type: :service do
+RSpec.describe Invoices::PDFGeneration, type: :service do
   let(:invoice) { create(:invoice, invoice_number: 'FV/2026/01/7') }
   let!(:invoice_item) { create(:invoice_item, invoice: invoice, name: 'Śrubokręt płaski') }
 

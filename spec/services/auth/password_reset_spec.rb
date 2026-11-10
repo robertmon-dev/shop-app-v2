@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::PasswordResetService, type: :service do
+RSpec.describe Auth::PasswordReset, type: :service do
   include ActiveJob::TestHelper
 
   let!(:user) { create(:user, mail: 'test@example.com') }

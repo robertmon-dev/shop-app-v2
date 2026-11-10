@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class StripeWebhookVerificationService
-    extend Concerns::Handlers
-    extend Concerns::ResultHelpers
-
+module Webhooks
+  class StripeVerification < ApplicationService
     def self.verify_and_construct_event(payload:, sig_header:, endpoint_secret:)
       unless endpoint_secret
         return internal_server_error_result(message: 'No endpoint secret provided',

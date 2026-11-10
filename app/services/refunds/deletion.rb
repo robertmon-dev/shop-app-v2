@@ -1,19 +1,17 @@
 # frozen_string_literal: true
 
-module Services
-  class RefundDeletionService
-    extend Concerns::Handlers
-    extend Concerns::ResultHelpers
+module Refunds
+  class Deletion < ApplicationService
+    def initialize(refund)
+      @refund = refund
+    end
 
-    def self.call(refund)
+    def call
+      return missing_result('Refund') unless @refund
+
       with_error_not_destroyed_handling do
-        return not_found_result(errors: ['refund not found'], message: 'refund not found') unless refund
-
-        ActiveRecord::Base.transaction do
-          refund.destroy!
-        end
-
-        success_result(status: :no_content, message: 'Refund deleted successfully')
+        @refund.destroy!
+        destroy_success_result(message: 'Refund deleted successfully')
       end
     end
   end
