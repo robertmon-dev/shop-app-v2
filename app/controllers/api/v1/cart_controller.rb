@@ -13,7 +13,7 @@ module Api
       private
 
       def cart_service
-        @cart_service ||= Services::CartService.new(current_user)
+        @cart_service ||= Carts::Management.new(current_user)
       end
 
       def render_cart(result = nil)
