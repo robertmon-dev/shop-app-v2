@@ -21,10 +21,19 @@ class ApplicationService
       Rails.logger.info("Webhook: #{message}")
       Result.new(success?: true, status: :ok, message: message)
     end
-    alias log_and_return_success_result no_action_needed_result
+
+    def log_and_return_success_result(message) = no_action_needed_result(message: message)
 
     def not_found_result(errors:, message:)
       failure_result(status: :not_found, errors: errors, message: message)
+    end
+
+    def missing_result(label)
+      not_found_result(errors: ["#{label} not found"], message: "#{label} not found")
+    end
+
+    def invalid_result(message, errors: [message])
+      unprocessable_content_with_errors_result(errors: errors, message: message)
     end
 
     def forbidden_result(errors:, message:)
