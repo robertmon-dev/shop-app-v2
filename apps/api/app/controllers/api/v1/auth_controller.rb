@@ -7,7 +7,8 @@ module Api
     class AuthController < Api::ApplicationController
       include Api::V1::Concerns::TokenResendable
 
-      skip_before_action :authenticate_user!
+      skip_before_action :authenticate_user!, except: %i[blacklist_user whitelist_user]
+      before_action :authorize_admin!, only: %i[blacklist_user whitelist_user]
       before_action :set_user_by_mail, only: %i[
         verify_2fa activate verify
         request_2fa_code_resend request_activation_code_resend request_verification_code_resend
