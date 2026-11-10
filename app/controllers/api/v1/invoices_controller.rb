@@ -8,7 +8,7 @@ module Api
       def index = respond_with_view(:index, invoices: accessible_invoices)
       def me = respond_with_view(:index, invoices: own_invoices)
       def show = respond_with_view(:show)
-      def download = respond_with(Services::InvoicePDFGenerationService.call(@invoice), :download)
+      def download = respond_with(Invoices::PDFGeneration.call(@invoice), :download)
 
       private
 
