@@ -9,23 +9,23 @@ module Api
         MESSAGE_VIEW = 'shared/message'
 
         def request_2fa_code_resend
-          render_auth(Services::AuthenticationService.send_2fa_code(@user), MESSAGE_VIEW)
+          render_auth(Auth::Authentication.send_2fa_code(@user), MESSAGE_VIEW)
         end
 
         def request_activation_code_resend
           return render_already_done(:activated) unless @user.unactivated?
 
-          render_auth(Services::UserManagementService.resend_activation_code(@user), MESSAGE_VIEW)
+          render_auth(Users::Management.resend_activation_code(@user), MESSAGE_VIEW)
         end
 
         def request_verification_code_resend
           return render_already_done(:verified) unless @user.unverified?
 
-          render_auth(Services::UserManagementService.resend_verification_code(@user), MESSAGE_VIEW)
+          render_auth(Users::Management.resend_verification_code(@user), MESSAGE_VIEW)
         end
 
         def request_reset_code_resend
-          render_auth(Services::PasswordResetService.request(params[:mail]), MESSAGE_VIEW)
+          render_auth(Auth::PasswordReset.request(params[:mail]), MESSAGE_VIEW)
         end
 
         private
