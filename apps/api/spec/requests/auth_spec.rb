@@ -150,4 +150,20 @@ RSpec.describe 'Api::V1::Auth', type: :request do
       end
     end
   end
+  describe 'POST /api/v1/auth/blacklist_user and whitelist_user' do
+    let(:target) { create(:user) }
+    let(:regular_headers) { { 'Authorization' => "Bearer #{Auth::Bearer.encode({ user_id: create(:user).id }).data[:token]}" } }
+
+    %w[blacklist_user whitelist_user].each do |action|
+      it "rejects an anonymous #{action} request" do
+        post "/api/v1/auth/#{action}", params: { user_id: target.id }
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "forbids #{action} for a regular user" do
+        post "/api/v1/auth/#{action}", params: { user_id: target.id }, headers: regular_headers
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+  end
 end

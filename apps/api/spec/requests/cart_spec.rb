@@ -39,7 +39,7 @@ RSpec.describe 'Api::V1::Carts', type: :request do
         expect(response).to have_http_status(:ok)
         expect(json['data']['items']).to be_empty
         expect(json['data']['items_count']).to eq(0)
-        expect(json['data']['total_amount']).to eq(0)
+        expect(json['data']['total_amount']).to eq('0.0')
       end
     end
   end
