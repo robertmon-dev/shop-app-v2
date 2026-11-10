@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
-module Services
+class ApplicationService
   Result = Struct.new(:success?, :data, :status, :errors, :message, keyword_init: true) do
+    def failure? = !success?
+
     def then
-      if success?
-        yield(data)
-      else
-        self
-      end
+      success? ? yield(data) : self
     end
   end
 end
