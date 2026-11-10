@@ -10,14 +10,14 @@ module Api
       before_action :set_category, only: %i[update_category destroy_category]
 
       def index = respond_with_view(:index, products: paginated_products)
-      def show = respond_with(Services::ProductCachingService.fetch_one(params[:id]))
-      def create = respond_with(Services::ProductCreationService.call(product_params))
-      def update = respond_with(Services::ProductUpdateService.call(@product, product_params))
-      def destroy = respond_with_destroy(Services::ProductDeletionService.call(@product))
+      def show = respond_with(Products::Caching.fetch_one(params[:id]))
+      def create = respond_with(Products::Creation.call(product_params))
+      def update = respond_with(Products::Update.call(@product, product_params))
+      def destroy = respond_with_destroy(Products::Deletion.call(@product))
       def like = respond_with(product_interaction_service.like(@product))
       def rate = respond_with(product_interaction_service.rate(@product, *rate_args))
       def comment = respond_with(product_interaction_service.add_comment(@product, *comment_args))
-      def create_photo = respond_with(Services::ProductPhotoCreationService.call(**photo_args), :create_photo)
+      def create_photo = respond_with(Products::PhotoCreation.call(**photo_args), :create_photo)
 
       def available_categories = respond_with_view(:categories, categories: Category.order(:name))
       def create_category = respond_with(category_service.create(category_params), :category)
@@ -28,14 +28,14 @@ module Api
 
       def authorize_category_management! = authorize!(:manage, Category)
 
-      def category_service = Services::CategoryManagementService
+      def category_service = Categories::Management
 
       def paginated_products
         Product.with_details.order(created_at: :desc).page(params[:page]).per(25)
       end
 
       def product_interaction_service
-        @product_interaction_service ||= Services::ProductInteractionService.new(current_user)
+        @product_interaction_service ||= Products::Interaction.new(current_user)
       end
 
       def photo_args = { image: params[:image], product: @product }
