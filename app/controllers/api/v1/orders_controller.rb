@@ -11,7 +11,7 @@ module Api
       def index = respond_with_view(:index, orders: accessible_orders)
       def me = respond_with_view(:index, orders: own_orders)
       def show = respond_with_view(:show)
-      def create = respond_with(Services::OrderCreationService.call(**create_args))
+      def create = respond_with(Orders::Creation.call(**create_args))
       def update = respond_with(order_management_service.update(update_order_params))
       def cancel = respond_with(order_management_service.cancel)
       def destroy = respond_with_destroy(order_management_service.destroy)
@@ -37,7 +37,7 @@ module Api
       end
 
       def order_management_service
-        @order_management_service ||= Services::OrderManagementService.new(@order)
+        @order_management_service ||= Orders::Management.new(@order)
       end
 
       def set_order
