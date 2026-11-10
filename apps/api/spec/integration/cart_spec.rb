@@ -14,7 +14,7 @@ describe 'Cart API' do
       security [Bearer: []]
 
       response '200', 'cart displayed' do
-        schema '$ref' => '#/components/schemas/Cart'
+        schema data_schema(:Cart)
 
         before do
           product = create(:product)
@@ -52,7 +52,7 @@ describe 'Cart API' do
       let(:params) { { quantity: 2 } }
 
       response '200', 'product added, cart returned' do
-        schema '$ref' => '#/components/schemas/Cart'
+        schema data_schema(:Cart)
 
         after do |example|
           example.metadata[:response][:content] =
@@ -87,7 +87,7 @@ describe 'Cart API' do
       let(:item_id) { cart_item.id }
 
       response '200', 'item removed, cart returned' do
-        schema '$ref' => '#/components/schemas/Cart'
+        schema data_schema(:Cart)
 
         after do |example|
           example.metadata[:response][:content] =
@@ -110,7 +110,7 @@ describe 'Cart API' do
       security [Bearer: []]
 
       response '200', 'cart cleared, empty cart returned' do
-        schema '$ref' => '#/components/schemas/Cart'
+        schema data_schema(:Cart)
 
         before do
           product = create(:product)

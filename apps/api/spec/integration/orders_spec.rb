@@ -30,22 +30,10 @@ describe 'Orders API' do
       produces 'application/json'
       security [Bearer: []]
 
-      let(:schema) do
-        {
-          type: :object,
-          properties: {
-            orders: {
-              type: :array,
-              items: { '$ref' => '#/components/schemas/Order' }
-            }
-          },
-          required: ['orders']
-        }
-      end
-
       context 'as an admin user' do
         let(:Authorization) { "Bearer #{admin_user_token}" }
         response '200', 'returns all orders' do
+          schema envelope_schema({ orders: list(:Order) })
           before do
             create(:order, user: regular_user)
             create(:order, user: other_user)
@@ -57,6 +45,7 @@ describe 'Orders API' do
       context 'as a regular user' do
         let(:Authorization) { "Bearer #{regular_user_token}" }
         response '200', 'returns only own orders' do
+          schema envelope_schema({ orders: list(:Order) })
           before do
             create(:order, user: regular_user)
             create(:order, user: other_user)
@@ -75,9 +64,7 @@ describe 'Orders API' do
       let(:Authorization) { "Bearer #{regular_user_token}" }
 
       response '200', 'returns current user orders' do
-        schema type: :object, properties: {
-          orders: { type: :array, items: { '$ref' => '#/components/schemas/Order' } }
-        }
+        schema envelope_schema({ orders: list(:Order) })
         before { create_list(:order, 2, user: regular_user) }
         run_test!
       end
@@ -97,7 +84,7 @@ describe 'Orders API' do
       context 'as the order owner' do
         let(:Authorization) { "Bearer #{regular_user_token}" }
         response '200', 'returns the requested order' do
-          schema '$ref' => '#/components/schemas/Order'
+          schema envelope_schema(order: ref(:Order))
           run_test!
         end
       end
@@ -105,7 +92,7 @@ describe 'Orders API' do
       context 'as an admin' do
         let(:Authorization) { "Bearer #{admin_user_token}" }
         response '200', 'returns the requested order' do
-          schema '$ref' => '#/components/schemas/Order'
+          schema envelope_schema(order: ref(:Order))
           run_test!
         end
       end
@@ -142,7 +129,7 @@ describe 'Orders API' do
       context 'as an admin' do
         let(:Authorization) { "Bearer #{admin_user_token}" }
         response '200', 'order updated successfully' do
-          schema '$ref' => '#/components/schemas/Order'
+          schema envelope_schema(order: ref(:Order))
           run_test!
         end
       end
@@ -200,7 +187,7 @@ describe 'Orders API' do
       let(:params) { { order: { cart_item_ids: [cart_item1.id, cart_item2.id] } } }
 
       response '201', 'order created successfully' do
-        schema '$ref' => '#/components/schemas/Order'
+        schema envelope_schema(order: ref(:Order))
         run_test!
       end
     end
@@ -218,7 +205,111 @@ describe 'Orders API' do
       let(:Authorization) { "Bearer #{regular_user_token}" }
 
       response '200', 'order cancelled' do
-        schema '$ref' => '#/components/schemas/Order'
+        schema envelope_schema(order: ref(:Order))
+        run_test!
+      end
+    end
+  end
+  path '/api/v1/orders/{id}' do
+    parameter name: :id, in: :path, type: :integer
+    let(:id) { create(:order, user: regular_user).id }
+
+    patch 'Updates an order (Admin only)' do
+      tags 'Orders'
+      consumes 'application/json'
+      produces 'application/json'
+      security [Bearer: []]
+      parameter name: :body, in: :body, schema: {
+        type: :object,
+        properties: { order: { type: :object,
+                               properties: { notes: { type: :string }, package_carrier: { type: :string } } } },
+        required: ['order']
+      }
+      let(:Authorization) { "Bearer #{admin_user_token}" }
+      let(:body) { { order: { notes: 'Leave at the door' } } }
+
+      response '200', 'order updated' do
+        schema envelope_schema(order: ref(:Order))
+        run_test!
+      end
+    end
+  end
+
+  { 'status' => %w[status processing],
+    'payment_status' => %w[payment_status paid] }.each do |segment, (attribute, value)|
+    path "/api/v1/orders/{id}/#{segment}" do
+      parameter name: :id, in: :path, type: :integer
+      let(:id) { create(:order, user: regular_user).id }
+
+      patch "Sets the order #{attribute} (Admin only)" do
+        tags 'Orders'
+        consumes 'application/json'
+        produces 'application/json'
+        security [Bearer: []]
+        parameter name: :body, in: :body, schema: {
+          type: :object,
+          properties: { order: { type: :object, properties: { attribute.to_sym => { type: :string } } } },
+          required: ['order']
+        }
+        let(:Authorization) { "Bearer #{admin_user_token}" }
+        let(:body) { { order: { attribute => value } } }
+
+        response '200', "#{attribute} updated" do
+          schema envelope_schema(order: ref(:Order))
+          run_test!
+        end
+
+        response '422', 'invalid status' do
+          let(:body) { { order: { attribute => 'nonsense' } } }
+          schema failure_schema
+          run_test!
+        end
+      end
+    end
+  end
+
+  path '/api/v1/orders/{id}/products' do
+    parameter name: :id, in: :path, type: :integer
+    let(:id) { create(:order, user: regular_user, status: :pending).id }
+
+    post 'Adds a product to an order' do
+      tags 'Orders'
+      consumes 'application/json'
+      produces 'application/json'
+      security [Bearer: []]
+      parameter name: :body, in: :body, schema: {
+        type: :object,
+        properties: { order: { type: :object, properties: { product_id: { type: :string, format: :uuid },
+                                                            quantity: { type: :integer } } } },
+        required: ['order']
+      }
+      let(:Authorization) { "Bearer #{admin_user_token}" }
+      let(:body) { { order: { product_id: create(:product).id, quantity: 2 } } }
+
+      response '200', 'product added' do
+        schema envelope_schema(order: ref(:Order))
+        run_test!
+      end
+    end
+  end
+
+  path '/api/v1/orders/{id}/products/{product_id}' do
+    parameter name: :id, in: :path, type: :integer
+    parameter name: :product_id, in: :path, type: :string, format: :uuid
+    parameter name: :quantity, in: :query, type: :integer, required: false
+    let(:order) { create(:order, :with_items, user: regular_user, status: :pending) }
+    let(:id) { order.id }
+    let(:product_id) { order.items.first.product_id }
+    let(:quantity) { 1 }
+
+    delete 'Removes a product from an order' do
+      tags 'Orders'
+      produces 'application/json'
+      security [Bearer: []]
+      let(:Authorization) { "Bearer #{admin_user_token}" }
+
+      response '200', 'product removed' do
+        schema envelope_schema(order: ref(:Order))
         run_test!
       end
     end

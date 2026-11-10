@@ -251,4 +251,54 @@ describe 'Products API' do
       end
     end
   end
+  path '/api/v1/products/{id}' do
+    parameter name: :id, in: :path, type: :string, format: :uuid
+    let(:id) { create(:product).id }
+
+    patch 'Updates a product (Admin only)' do
+      tags 'Products'
+      consumes 'application/json'
+      produces 'application/json'
+      security [Bearer: []]
+      parameter name: :body, in: :body, schema: {
+        type: :object, properties: { product: { type: :object,
+                                                properties: { name: { type: :string } } } }, required: ['product']
+      }
+      let(:Authorization) { "Bearer #{admin_user_token}" }
+      let(:body) { { product: { name: 'Renamed' } } }
+
+      response '200', 'product updated' do
+        schema envelope_schema(product: ref(:Product))
+        run_test!
+      end
+    end
+  end
+
+  path '/api/v1/products/{id}/create_photo' do
+    parameter name: :id, in: :path, type: :string, format: :uuid
+    let(:id) { create(:product).id }
+
+    post 'Uploads a photo for a product (Admin only)' do
+      tags 'Products'
+      consumes 'multipart/form-data'
+      produces 'application/json'
+      security [Bearer: []]
+      parameter name: :image, in: :formData, schema: {
+        type: :object, properties: { image: { type: :string, format: :binary } }, required: ['image']
+      }
+      let(:Authorization) { "Bearer #{admin_user_token}" }
+      let(:image) { Rack::Test::UploadedFile.new(Rails.root.join('spec/fixtures/files/test_image.png'), 'image/png') }
+
+      response '201', 'photo uploaded' do
+        schema envelope_schema(product_photo: ref(:ProductPhoto))
+        run_test!
+      end
+
+      response '422', 'missing or unsupported image' do
+        let(:image) { nil }
+        schema failure_schema
+        run_test!
+      end
+    end
+  end
 end

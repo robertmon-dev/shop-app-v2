@@ -44,7 +44,7 @@ describe 'Authentication API' do
           let(:user_with_2fa) { create(:user, :two_factor_enabled, password: 'password') }
           let(:credentials) { { mail: user_with_2fa.mail, password: 'password' } }
 
-          schema type: :object, properties: { message: { type: :string, example: '2FA code has been sent.' } }
+          schema message_schema
 
           after do |example|
             example.metadata[:response][:content] =
@@ -58,7 +58,7 @@ describe 'Authentication API' do
         response '401', 'invalid credentials' do
           let(:credentials) { { mail: user.mail, password: 'wrong_password' } }
 
-          schema type: :object, properties: { errors: { type: :array, items: { type: :string } } }
+          schema failure_schema
 
           after do |example|
             example.metadata[:response][:content] =
@@ -105,7 +105,7 @@ describe 'Authentication API' do
         response '401', 'invalid 2FA code' do
           let(:verification) { { mail: user_with_2fa.mail, second_factor_code: 'wrong_code' } }
 
-          schema type: :object, properties: { errors: { type: :array, items: { type: :string } } }
+          schema failure_schema
 
           after do |example|
             example.metadata[:response][:content] =
@@ -138,7 +138,7 @@ describe 'Authentication API' do
         response '200', 'account activated successfully' do
           let(:activation) { { mail: inactive_user.mail, activation_code: activation_code.code } }
 
-          schema type: :object, properties: { message: { type: :string } }
+          schema message_schema
 
           after do |example|
             example.metadata[:response][:content] =
@@ -152,7 +152,7 @@ describe 'Authentication API' do
         response '422', 'invalid activation code' do
           let(:activation) { { mail: inactive_user.mail, activation_code: 'wrong_code' } }
 
-          schema type: :object, properties: { errors: { type: :array, items: { type: :string } } }
+          schema failure_schema
 
           after do |example|
             example.metadata[:response][:content] =
@@ -180,7 +180,7 @@ describe 'Authentication API' do
       let(:email_param) { { mail: user.mail } }
 
       response '200', 'password reset instructions sent' do
-        schema type: :object, properties: { message: { type: :string } }
+        schema message_schema
 
         after do |example|
           example.metadata[:response][:content] =
@@ -213,7 +213,7 @@ describe 'Authentication API' do
             { reset_code: reset_code.code, password: 'newPassword123', password_confirmation: 'newPassword123' }
           end
 
-          schema type: :object, properties: { message: { type: :string } }
+          schema message_schema
 
           after do |example|
             example.metadata[:response][:content] =
@@ -229,7 +229,7 @@ describe 'Authentication API' do
             { reset_code: 'wrong_code', password: 'newPassword123', password_confirmation: 'newPassword123' }
           end
 
-          schema type: :object, properties: { errors: { type: :array, items: { type: :string } } }
+          schema failure_schema
 
           after do |example|
             example.metadata[:response][:content] =
@@ -237,6 +237,80 @@ describe 'Authentication API' do
           end
           run_test!
         end
+      end
+    end
+  end
+  path '/api/v1/auth/verify' do
+    patch 'Verifies a user account' do
+      tags 'Authentication'
+      consumes 'application/json'
+      produces 'application/json'
+      parameter name: :body, in: :body, schema: {
+        type: :object, properties: { mail: { type: :string }, verification_code: { type: :string } },
+        required: %w[mail verification_code]
+      }
+      let(:unverified) { create(:user, :unverified) }
+      let!(:verification_code) { create(:verification_code, user: unverified) }
+      let(:body) { { mail: unverified.mail, verification_code: verification_code.code } }
+
+      response '200', 'account verified' do
+        schema envelope_schema(user: ref(:User))
+        run_test!
+      end
+
+      response '422', 'invalid verification code' do
+        let(:body) { { mail: unverified.mail, verification_code: 'wrong' } }
+        schema failure_schema
+        run_test!
+      end
+    end
+  end
+
+  {
+    'request_activation_code_resend' => :unactivated,
+    'request_verification_code_resend' => :unverified,
+    'request_2fa_code_resend' => :two_factor_enabled
+  }.each do |action, trait|
+    path "/api/v1/auth/#{action}" do
+      post "Resends the code (#{action})" do
+        tags 'Authentication'
+        consumes 'application/json'
+        produces 'application/json'
+        parameter name: :body, in: :body, schema: {
+          type: :object, properties: { mail: { type: :string } }, required: ['mail']
+        }
+        let(:target) { create(:user, trait) }
+        let!(:activation_code) { create(:activation_code, user: target) if trait == :unactivated }
+        let!(:verification_code) { create(:verification_code, user: target) if trait == :unverified }
+        let(:body) { { mail: target.mail } }
+
+        response '200', 'code resent' do
+          schema message_schema
+          run_test!
+        end
+
+        response '404', 'user not found' do
+          let(:body) { { mail: 'nobody@example.com' } }
+          schema failure_schema
+          run_test!
+        end
+      end
+    end
+  end
+
+  path '/api/v1/auth/request_reset_code_resend' do
+    post 'Requests a new password reset code' do
+      tags 'Authentication'
+      consumes 'application/json'
+      produces 'application/json'
+      parameter name: :body, in: :body, schema: {
+        type: :object, properties: { mail: { type: :string } }, required: ['mail']
+      }
+      let(:body) { { mail: user.mail } }
+
+      response '200', 'instructions sent if the account exists' do
+        schema message_schema
+        run_test!
       end
     end
   end

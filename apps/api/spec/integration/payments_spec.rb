@@ -22,9 +22,7 @@ describe 'Payments API' do
       context 'as an admin user' do
         let(:Authorization) { "Bearer #{admin_user_token}" }
         response '200', 'returns all payments' do
-          schema type: :object, properties: {
-            payments: { type: :array, items: { '$ref' => '#/components/schemas/Payment' } }
-          }
+          schema envelope_schema({ payments: list(:Payment) })
           before do
             order1 = create(:order, user: regular_user)
             order2 = create(:order, user: other_user)
@@ -57,13 +55,14 @@ describe 'Payments API' do
         let!(:order) { create(:order, :with_items, user: regular_user) }
         let(:payment_params) { { payment: { order_id: order.id } } }
 
-        response '201', 'payment initiated successfully' do
-          schema '$ref' => '#/components/schemas/Payment'
+        response '200', 'payment intent created, client secret returned' do
+          schema envelope_schema(client_secret: { type: :string })
 
           before do
             allow(Payments::Creation).to receive(:call).and_return(
-              ApplicationService::Result.new(success?: true, status: :created,
-                                   data: { payment: create(:payment, :paid, order: order) })
+              ApplicationService::Result.new(success?: true, status: :ok,
+                                             message: 'Payment intent created successfully.',
+                                             data: { client_secret: 'pi_secret_123' })
             )
           end
           run_test!
@@ -94,7 +93,7 @@ describe 'Payments API' do
       context 'as the payment owner' do
         let(:Authorization) { "Bearer #{regular_user_token}" }
         response '200', 'returns the requested payment' do
-          schema '$ref' => '#/components/schemas/Payment'
+          schema envelope_schema(payment: ref(:Payment))
           run_test!
         end
       end

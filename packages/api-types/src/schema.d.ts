@@ -52,7 +52,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            /** @example 2FA code has been sent. */
+                            success: boolean;
                             message?: string;
                         };
                     };
@@ -64,7 +64,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            errors?: string[];
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
                         };
                     };
                 };
@@ -122,7 +126,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            errors?: string[];
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
                         };
                     };
                 };
@@ -173,6 +181,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            success: boolean;
                             message?: string;
                         };
                     };
@@ -184,7 +193,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            errors?: string[];
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
                         };
                     };
                 };
@@ -225,6 +238,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            success: boolean;
                             message?: string;
                         };
                     };
@@ -262,6 +276,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            success: boolean;
                             message?: string;
                         };
                     };
@@ -273,12 +288,305 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            errors?: string[];
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
                         };
                     };
                 };
             };
         };
+        trace?: never;
+    };
+    "/api/v1/auth/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Verifies a user account */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        mail: string;
+                        verification_code: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description account verified */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                user: components["schemas"]["User"];
+                            };
+                        };
+                    };
+                };
+                /** @description invalid verification code */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/auth/request_activation_code_resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resends the code (request_activation_code_resend) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        mail: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description code resent */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                        };
+                    };
+                };
+                /** @description user not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/request_verification_code_resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resends the code (request_verification_code_resend) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        mail: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description code resent */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                        };
+                    };
+                };
+                /** @description user not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/request_2fa_code_resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resends the code (request_2fa_code_resend) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        mail: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description code resent */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                        };
+                    };
+                };
+                /** @description user not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/request_reset_code_resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Requests a new password reset code */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        mail: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description instructions sent if the account exists */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/cart": {
@@ -304,7 +612,11 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Cart"];
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: components["schemas"]["Cart"];
+                        };
                     };
                 };
             };
@@ -358,7 +670,11 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Cart"];
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: components["schemas"]["Cart"];
+                        };
                     };
                 };
                 /** @description product not found */
@@ -412,7 +728,11 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Cart"];
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: components["schemas"]["Cart"];
+                        };
                     };
                 };
                 /** @description item not found */
@@ -455,7 +775,11 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Cart"];
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: components["schemas"]["Cart"];
+                        };
                     };
                 };
             };
@@ -463,6 +787,166 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lists categories */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description returns all categories */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                categories: components["schemas"]["Category"][];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Creates a category (Admin only) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CategoryInput"];
+                };
+            };
+            responses: {
+                /** @description category created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                category: components["schemas"]["Category"];
+                            };
+                        };
+                    };
+                };
+                /** @description forbidden for a regular user */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** Format: uuid */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deletes a category (Admin only) */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** Format: uuid */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description category deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Updates a category (Admin only) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** Format: uuid */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CategoryInput"];
+                };
+            };
+            responses: {
+                /** @description category updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                category: components["schemas"]["Category"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/api/v1/diagnostics/readiness": {
@@ -612,6 +1096,298 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lists invoices (all for an admin, own otherwise) */
+        get: {
+            parameters: {
+                query?: {
+                    page?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description returns a paginated list of invoices */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                invoices: components["schemas"]["Invoice"][];
+                            };
+                            meta: components["schemas"]["Meta"];
+                        };
+                    };
+                };
+                /** @description unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invoices/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lists the current user's invoices */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description returns own invoices */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                invoices: components["schemas"]["Invoice"][];
+                            };
+                            meta: components["schemas"]["Meta"];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invoices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        /** Retrieves an invoice */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description returns the invoice */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                invoice: components["schemas"]["Invoice"];
+                            };
+                        };
+                    };
+                };
+                /** @description forbidden for another user's invoice */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invoices/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        /** Downloads the invoice as a base64 encoded PDF */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description returns the rendered PDF */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: components["schemas"]["InvoiceDownload"];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/n8n_webhook/handle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Receives shipment events from n8n */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    "X-N8N-Signature": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        event: string;
+                        order_id: number;
+                        tracking_id?: string;
+                        shipping_service_id?: string;
+                        notes?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description order updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                order_id: number;
+                            };
+                        };
+                    };
+                };
+                /** @description invalid signature */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+                /** @description unsupported event */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders": {
         parameters: {
             query?: never;
@@ -634,7 +1410,15 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                orders: components["schemas"]["Order"][];
+                            };
+                        };
+                    };
                 };
             };
         };
@@ -663,7 +1447,13 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Order"];
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                order: components["schemas"]["Order"];
+                            };
+                        };
                     };
                 };
             };
@@ -698,7 +1488,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            orders?: components["schemas"]["Order"][];
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                orders: components["schemas"]["Order"][];
+                            };
                         };
                     };
                 };
@@ -716,7 +1510,9 @@ export interface paths {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: number;
+            };
             cookie?: never;
         };
         /** Retrieves a single order */
@@ -737,7 +1533,13 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Order"];
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                order: components["schemas"]["Order"];
+                            };
+                        };
                     };
                 };
                 /** @description forbidden */
@@ -778,7 +1580,13 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Order"];
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                order: components["schemas"]["Order"];
+                            };
+                        };
                     };
                 };
                 /** @description forbidden */
@@ -821,7 +1629,44 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        patch?: never;
+        /** Updates an order (Admin only) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        order: {
+                            notes?: string;
+                            package_carrier?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description order updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                order: components["schemas"]["Order"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/api/v1/orders/{id}/cancel": {
@@ -851,12 +1696,266 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Order"];
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                order: components["schemas"]["Order"];
+                            };
+                        };
                     };
                 };
             };
         };
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Sets the order status (Admin only) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        order: {
+                            status?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description status updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                order: components["schemas"]["Order"];
+                            };
+                        };
+                    };
+                };
+                /** @description invalid status */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/orders/{id}/payment_status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Sets the order payment_status (Admin only) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        order: {
+                            payment_status?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description payment_status updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                order: components["schemas"]["Order"];
+                            };
+                        };
+                    };
+                };
+                /** @description invalid status */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/orders/{id}/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adds a product to an order */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        order: {
+                            /** Format: uuid */
+                            product_id?: string;
+                            quantity?: number;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description product added */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                order: components["schemas"]["Order"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{id}/products/{product_id}": {
+        parameters: {
+            query?: {
+                quantity?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+                /** Format: uuid */
+                product_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Removes a product from an order */
+        delete: {
+            parameters: {
+                query?: {
+                    quantity?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                    /** Format: uuid */
+                    product_id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description product removed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                order: components["schemas"]["Order"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -886,7 +1985,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            payments?: components["schemas"]["Payment"][];
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                payments: components["schemas"]["Payment"][];
+                            };
                         };
                     };
                 };
@@ -912,13 +2015,19 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description payment initiated successfully */
-                201: {
+                /** @description payment intent created, client secret returned */
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Payment"];
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                client_secret: string;
+                            };
+                        };
                     };
                 };
                 /** @description order not found */
@@ -961,7 +2070,13 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Payment"];
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                payment: components["schemas"]["Payment"];
+                            };
+                        };
                     };
                 };
                 /** @description forbidden */
@@ -1013,13 +2128,7 @@ export interface paths {
                             data: {
                                 products: components["schemas"]["Product"][];
                             };
-                            meta: {
-                                current_page: number;
-                                next_page?: number | null;
-                                prev_page?: number | null;
-                                total_pages: number;
-                                total_count: number;
-                            };
+                            meta: components["schemas"]["Meta"];
                         };
                     };
                 };
@@ -1093,7 +2202,10 @@ export interface paths {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                /** Format: uuid */
+                id: string;
+            };
             cookie?: never;
         };
         /** Retrieves a single product */
@@ -1215,7 +2327,44 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        patch?: never;
+        /** Updates a product (Admin only) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** Format: uuid */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        product: {
+                            name?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description product updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                product: components["schemas"]["Product"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/api/v1/products/{id}/like": {
@@ -1382,6 +2531,487 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/{id}/create_photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** Format: uuid */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Uploads a photo for a product (Admin only) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** Format: uuid */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "multipart/form-data": {
+                        /** Format: binary */
+                        image: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description photo uploaded */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                product_photo: components["schemas"]["ProductPhoto"];
+                            };
+                        };
+                    };
+                };
+                /** @description missing or unsupported image */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{order_id}/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        /** Lists the refunds of an order (Admin only) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    order_id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description returns the refunds of the order */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                refunds: components["schemas"]["Refund"][];
+                            };
+                        };
+                    };
+                };
+                /** @description unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Requests a refund for an order */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    order_id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        refund: {
+                            reason?: string;
+                            description?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description refund created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                refund: components["schemas"]["Refund"];
+                            };
+                        };
+                    };
+                };
+                /** @description a refund has already been requested */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/refunds/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lists the current user's refunds */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description returns own refunds */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                refunds: components["schemas"]["Refund"][];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/refunds/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        /** Retrieves a refund */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description returns the refund */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                refund: components["schemas"]["Refund"];
+                            };
+                        };
+                    };
+                };
+                /** @description forbidden for another user */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
+                        };
+                    };
+                };
+            };
+        };
+        /** Updates a refund (PUT) */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        refund: {
+                            status?: string;
+                            reason?: string;
+                            description?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description refund updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                refund: components["schemas"]["Refund"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        post?: never;
+        /** Deletes a refund (Admin only) */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description refund deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description forbidden for a regular user */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Updates a refund (PATCH) */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        refund: {
+                            status?: string;
+                            reason?: string;
+                            description?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description refund updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                refund: components["schemas"]["Refund"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/refunds/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancels a refund */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description refund cancelled */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                refund: components["schemas"]["Refund"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/refunds/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Completes a refund (Admin only) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description refund completed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                refund: components["schemas"]["Refund"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/stripe_payments_webhook/handle": {
         parameters: {
             query?: never;
@@ -1488,7 +3118,12 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            users?: components["schemas"]["User"][];
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                users: components["schemas"]["User"][];
+                            };
+                            meta: components["schemas"]["Meta"];
                         };
                     };
                 };
@@ -1538,7 +3173,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            user?: components["schemas"]["User"];
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                user: components["schemas"]["UserProfile"];
+                            };
                         };
                     };
                 };
@@ -1581,7 +3220,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            user?: components["schemas"]["User"];
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                user: components["schemas"]["UserProfile"];
+                            };
                         };
                     };
                 };
@@ -1621,6 +3264,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
+                            success: boolean;
                             message?: string;
                         };
                     };
@@ -1661,7 +3305,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            user?: components["schemas"]["User"];
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                user: components["schemas"]["UserProfile"];
+                            };
                         };
                     };
                 };
@@ -1723,7 +3371,43 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        patch?: never;
+        /** Updates a user profile */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        user: {
+                            phone?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description profile updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                user: components["schemas"]["UserProfile"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/api/v1/users/{id}/role/update": {
@@ -1823,99 +3507,421 @@ export interface paths {
         };
         trace?: never;
     };
+    "/api/v1/users/{id}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        /** Lists the actions performed by a user */
+        get: {
+            parameters: {
+                query?: {
+                    page?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description returns a paginated list of actions */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                actions: components["schemas"]["UserAction"][];
+                            };
+                            meta: components["schemas"]["Meta"];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{id}/update_location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Updates the user's location */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        location: {
+                            country?: string;
+                            city?: string;
+                            street?: string;
+                            postal_code?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description location updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                user: components["schemas"]["UserProfile"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/users/{id}/update_entrepreneur_details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Updates the entrepreneur's business details */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        entrepreneur_detail: {
+                            business_name?: string;
+                            nip?: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description details updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                user: components["schemas"]["UserProfile"];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         User: {
             id: number;
-            /** Format: email */
             mail: string;
-            phone?: string | null;
+            phone?: string;
             /** @enum {string} */
-            role: "regular" | "moderator" | "admin";
+            role?: "regular" | "moderator" | "admin" | "entrepreneur";
             active: boolean;
             verified: boolean;
-            two_factor_enabled?: boolean;
             /** Format: date-time */
-            created_at?: string;
+            created_at: string;
             /** Format: date-time */
-            updated_at?: string;
+            updated_at: string;
         };
         UserDetail: {
-            name?: string;
-            first_name?: string | null;
-            last_name?: string | null;
+            id: number;
+            name: string;
+            first_name: string | null;
+            last_name: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        Location: {
+            id: number;
+            country: string | null;
+            province: string | null;
+            city: string | null;
+            postal_code: string | null;
+            street: string | null;
+            building_number: string | null;
+            apartment_number: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        EntrepreneurDetail: {
+            business_name: string | null;
+            nip: string | null;
+            krs: string | null;
+            description: string | null;
+            offer: string | null;
+            industry: string | null;
+            business_phone_number: string | null;
+            business_mail: string | null;
+            website_address: string | null;
+            id: number;
+            income: unknown;
+            costs: unknown;
+            funding_capital: unknown;
+            management_council_members: unknown;
+            decision_makers: unknown;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        UserProfile: {
+            user_detail?: components["schemas"]["UserDetail"];
+            locations?: components["schemas"]["Location"][];
+            entrepreneur_detail?: components["schemas"]["EntrepreneurDetail"];
+        } & components["schemas"]["User"];
+        UserAction: {
+            id: number;
+            action_type: string;
+            action: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        ProductPhoto: {
+            /** Format: uuid */
+            id: string;
+            url: string | null;
+            thumbnail_url?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ProductLike: {
+            id: number;
+            user_id: number;
+            /** Format: date-time */
+            created_at: string;
+        };
+        ProductComment: {
+            id: number;
+            user_id: number;
+            content: string;
+            parent_id?: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            replies?: Record<string, never>[];
+        };
+        Category: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            parents: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            }[];
         };
         Product: {
             /** Format: uuid */
             id: string;
             name: string;
-            /** Format: decimal */
-            price: string;
             description?: string | null;
+            /** @description Decimal serialised as a string */
+            price: string;
+            average_rating?: unknown;
+            likes_count: number;
+            comments_count: number;
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */
             updated_at?: string;
+            photos: components["schemas"]["ProductPhoto"][];
+            likes: components["schemas"]["ProductLike"][];
+            comments: components["schemas"]["ProductComment"][];
+            categories: components["schemas"]["Category"][];
         };
-        ProductPhoto: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            product_id?: string;
-            /**
-             * Format: uri
-             * @description URL to the attached image
-             */
-            url?: string;
-        };
-        Item: {
-            id?: number;
-            quantity?: number;
-            /** Format: decimal */
-            price_at_purchase?: string;
-            product?: components["schemas"]["Product"];
-        };
-        Cart: {
-            items?: components["schemas"]["Item"][];
-            /** Format: decimal */
-            total_amount?: string;
-            items_count?: number;
+        OrderItem: {
+            id: number;
+            product_name: string;
+            quantity: number;
+            /** @description Decimal serialised as a string */
+            price_at_purchase: string;
+            /** @description Decimal serialised as a string */
+            subtotal: string;
         };
         Order: {
-            id?: number;
-            user_id?: number;
-            /** Format: decimal */
-            total_amount?: string;
-            status?: string;
-            payment_status?: string;
+            id: number;
+            user_id: number;
+            /** @description Decimal serialised as a string */
+            total_amount: string;
+            status: string;
+            payment_status: string;
             /** Format: date-time */
-            order_date?: string;
-            items?: components["schemas"]["Item"][];
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            items: components["schemas"]["OrderItem"][];
         };
         Payment: {
-            id?: number;
-            order_id?: number;
-            /** Format: decimal */
-            amount?: string;
-            status?: string;
-            payment_method?: string;
-            transaction_id?: string | null;
-            currency?: string;
+            id: number;
+            order_id: number;
+            /** @description Decimal serialised as a string */
+            amount: string;
+            currency: string;
+            status: string;
+            payment_method?: string | null;
             /** Format: date-time */
-            created_at?: string;
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            order?: components["schemas"]["Order"];
         };
-        Comment: {
-            id?: number;
-            content?: string;
-            user_id?: number;
-            /** Format: uuid */
-            product_id?: string;
-            parent_id?: number | null;
-            replies_count?: number;
+        Refund: {
+            id: number;
+            order_id: number;
+            user_id: number;
+            status: string;
+            payment_status: string;
+            reason: string | null;
+            description: string | null;
+            refund_date: string | null;
             /** Format: date-time */
-            created_at?: string;
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        InvoiceItem: {
+            id: number;
+            name: string;
+            quantity: number;
+            unit_of_measure: string | null;
+            /** @description Decimal serialised as a string */
+            net_price: string;
+            /** @description Decimal serialised as a string */
+            vat_rate: string;
+            /** @description Decimal serialised as a string */
+            total_net_price: string;
+            /** @description Decimal serialised as a string */
+            total_vat_price: string;
+            /** @description Decimal serialised as a string */
+            total_gross_price: string;
+        };
+        Invoice: {
+            id: number;
+            invoice_number: string;
+            order_id: number;
+            payment_id: number | null;
+            buyer_name: string | null;
+            buyer_tax_id: string | null;
+            full_address: string | null;
+            sale_date: string | null;
+            due_date: string | null;
+            /** @description Decimal serialised as a string */
+            total_net: string;
+            /** @description Decimal serialised as a string */
+            tax_value: string;
+            /** @description Decimal serialised as a string */
+            total_gross: string;
+            url: string | null;
+            /** Format: date-time */
+            created_at: string;
+            items: components["schemas"]["InvoiceItem"][];
+        };
+        CartItem: {
+            item_id: number;
+            quantity: number;
+            /** @description Decimal serialised as a string */
+            price_at_purchase: string;
+            /** @description Decimal serialised as a string */
+            subtotal: string;
+            product: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            };
+        };
+        InvoiceDownload: {
+            filename: string;
+            content_type: string;
+            /** @description Base64 PDF */
+            pdf: string;
+        };
+        CategoryInput: {
+            category: {
+                name?: string;
+                parent_id?: string | null;
+            };
+        };
+        Cart: {
+            /** @description Decimal serialised as a string */
+            total_amount: string;
+            items_count: number;
+            items: components["schemas"]["CartItem"][];
+        };
+        Meta: {
+            current_page: number;
+            next_page: number | null;
+            prev_page: number | null;
+            total_pages: number;
+            total_count: number;
         };
     };
     responses: never;
