@@ -31,7 +31,7 @@ module Api
     end
 
     def authenticate_user!
-      token_decode_result = Services::BearerService.decode(bearer_token.to_s)
+      token_decode_result = Auth::Bearer.decode(bearer_token.to_s)
       return render_unauthenticated(token_decode_result) unless token_decode_result.success?
 
       @decoded_jwt_token = token_decode_result
