@@ -5,11 +5,11 @@ module Api
     class DiagnosticsController < Api::ApplicationController
       skip_before_action :authenticate_user!
 
-      def readiness = render_probe(Services::DiagnosticsService.readiness_probe)
-      def health = render_probe(Services::DiagnosticsService.health_probe)
+      def readiness = render_probe(Diagnostics::Probe.readiness_probe)
+      def health = render_probe(Diagnostics::Probe.health_probe)
 
       def metrics
-        render plain: Prometheus::Client::Formats::Text.marshal(Services::Instrumentor.registry),
+        render plain: Prometheus::Client::Formats::Text.marshal(Diagnostics::Instrumentor.registry),
                content_type: 'text/plain; version=0.0.4'
       end
 
