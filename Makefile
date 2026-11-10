@@ -7,6 +7,8 @@ CLUSTER_FILES = -f docker-compose.yml -f docker/docker-compose.cluster.yml
 INFRA         = db redis rabbitmq mailpit
 BUNDLE        = bundle exec
 RAILS         = bin/rails
+YARN          = yarn
+TURBO         = yarn turbo
 
 -include $(API_DIR)/.env
 
@@ -232,6 +234,16 @@ coverage: ## Run the suite with SimpleCov enabled
 	@$(API) COVERAGE=true $(BUNDLE) rspec
 
 # ==============================================================================
+# JavaScript workspaces
+# ==============================================================================
+
+.PHONY: install
+install: ## Install JavaScript dependencies for every workspace
+	@echo "=> Installing workspace dependencies..."
+	@$(YARN) install
+	@echo "=> Installation complete."
+
+# ==============================================================================
 # Quality
 # ==============================================================================
 
@@ -257,6 +269,21 @@ swagger: ## Regenerate swagger/v1/swagger.yaml from the integration specs
 	@echo "=> Generating swagger docs..."
 	@$(API) $(BUNDLE) rake rswag:specs:swaggerize
 	@echo "=> Swagger docs generated."
+
+# ==============================================================================
+# TypeScript types (generated from the Rails OpenAPI document)
+# ==============================================================================
+
+.PHONY: types
+types: swagger ## Regenerate packages/api-types from the integration specs
+	@echo "=> Generating TypeScript types..."
+	@$(YARN) workspace @shop/api-types generate
+	@echo "=> Types generated."
+
+.PHONY: types-check
+types-check: types ## Fail when the committed swagger.yaml or generated types are stale
+	@git diff --exit-code -- $(API_DIR)/swagger packages/api-types/src/schema.d.ts \
+		|| (echo "$(YELLOW)=> API types are out of date. Run 'make types' and commit the result.$(RESET)"; exit 1)
 
 # ==============================================================================
 # Running the app
