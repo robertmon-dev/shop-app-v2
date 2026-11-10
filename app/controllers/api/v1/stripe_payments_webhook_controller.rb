@@ -5,7 +5,7 @@ module Api
     class StripePaymentsWebhookController < Api::ApplicationController
       skip_before_action :authenticate_user!
 
-      def handle = respond_in_view(Services::StripeWebhookHandlerService.call(**webhook_args), :handle)
+      def handle = respond_in_view(Webhooks::StripeHandler.call(**webhook_args), :handle)
 
       private
 
