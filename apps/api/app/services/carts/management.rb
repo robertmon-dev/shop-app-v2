@@ -44,7 +44,7 @@ module Carts
 
       {
         cart_items: cart_items,
-        total_amount: @user.cart_items.sum('quantity * price_at_purchase'),
+        total_amount: @user.cart_items.sum('quantity * price_at_purchase').to_d,
         items_count: cart_items.sum(:quantity)
       }
     end
