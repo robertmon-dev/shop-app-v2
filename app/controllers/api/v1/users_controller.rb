@@ -10,7 +10,7 @@ module Api
       def show = respond_with_view(:show)
       def me = respond_with_view(:show, user: current_user)
       def actions = respond_with_view(:actions, actions: @user.user_actions.page(params[:page]).per(25))
-      def create = respond_with(Services::UserCreationService.call(user_params))
+      def create = respond_with(Users::Creation.call(user_params))
       def update = respond_with(user_profile_service.update_profile(user_params))
       def update_location = respond_with(user_profile_service.update_location(location_params))
       def update_details = respond_with(user_profile_service.update_details(user_detail_params))
@@ -23,13 +23,13 @@ module Api
 
       def logout
         authorize! :logout, current_user
-        respond_with_message(Services::AuthenticationService.blacklist_token(bearer_token))
+        respond_with_message(Auth::Authentication.blacklist_token(bearer_token))
       end
 
       private
 
       def user_profile_service
-        @user_profile_service ||= Services::UserProfileService.new(@user)
+        @user_profile_service ||= Users::Profile.new(@user)
       end
 
       def user_params
