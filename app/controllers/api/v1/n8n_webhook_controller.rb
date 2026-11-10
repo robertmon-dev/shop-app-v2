@@ -6,7 +6,7 @@ module Api
       skip_before_action :authenticate_user!
       before_action :verify_webhook_secret
 
-      def handle = respond_with(Services::N8nWebhookHandler.call(webhook_params), :handle)
+      def handle = respond_with(Webhooks::N8nHandler.call(webhook_params), :handle)
 
       private
 
