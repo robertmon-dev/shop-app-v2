@@ -4,10 +4,10 @@ class InvoicePDFCreationJob < ApplicationJob
   queue_as :default
 
   def perform(invoice)
-    render_result = Services::InvoicePDFGenerationService.call(invoice)
+    render_result = Invoices::PDFGeneration.call(invoice)
     return log_failure(invoice, render_result) unless render_result.success?
 
-    upload_result = Services::S3UploadService.call(
+    upload_result = Storage::S3Upload.call(
       data: render_result.data[:pdf],
       filename: render_result.data[:filename],
       content_type: 'application/pdf'
