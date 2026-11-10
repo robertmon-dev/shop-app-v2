@@ -7,7 +7,7 @@ module Api
 
       def index = respond_with_view(:index, payments: payments_scope)
       def show = respond_with_view(:show)
-      def create = respond_with(Services::PaymentCreationService.call(user: current_user, order_id: order_id))
+      def create = respond_with(Payments::Creation.call(user: current_user, order_id: order_id))
 
       private
 
