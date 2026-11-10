@@ -1,12 +1,14 @@
 SHELL := /bin/bash
 
-COMPOSE       = docker compose
+API_DIR       = apps/api
+API           = cd $(API_DIR) &&
+COMPOSE       = docker compose $(if $(wildcard $(API_DIR)/.env),--env-file $(API_DIR)/.env)
 CLUSTER_FILES = -f docker-compose.yml -f docker/docker-compose.cluster.yml
 INFRA         = db redis rabbitmq mailpit
 BUNDLE        = bundle exec
 RAILS         = bin/rails
 
--include .env
+-include $(API_DIR)/.env
 
 POSTGRES_USER            ?= postgres
 POSTGRES_PASSWORD        ?= postgres
@@ -38,9 +40,9 @@ help: ## Display this help message
 .PHONY: setup
 setup: ## Full project orchestration (.env -> gems -> infra -> DB setup)
 	@echo "$(CYAN)=> Running full project setup...$(RESET)"
-	@test -f .env || (cp .env.sample .env && echo "$(YELLOW)=> Created .env from .env.sample - fill in the secrets$(RESET)")
+	@test -f $(API_DIR)/.env || (cp $(API_DIR)/.env.sample $(API_DIR)/.env && echo "$(YELLOW)=> Created $(API_DIR)/.env from .env.sample - fill in the secrets$(RESET)")
 	@echo "$(CYAN)=> Installing gems...$(RESET)"
-	@bundle install
+	@$(API) bundle install
 	@$(MAKE) up
 	@$(MAKE) db-prepare
 	@echo "$(GREEN)=> Setup complete! Run 'make server' to start the API or 'make test' to run the suite.$(RESET)"
@@ -140,38 +142,38 @@ docker-down: ## Stop the full in-Docker stack
 .PHONY: db-prepare
 db-prepare: ## Create and migrate both development and test databases
 	@echo "=> Preparing development and test databases..."
-	@$(RAILS) db:prepare
-	@RAILS_ENV=test $(RAILS) db:prepare
+	@$(API) $(RAILS) db:prepare
+	@$(API) RAILS_ENV=test $(RAILS) db:prepare
 	@echo "=> Databases ready."
 
 .PHONY: db-create
 db-create: ## Create the databases
 	@echo "=> Creating databases..."
-	@$(RAILS) db:create
-	@RAILS_ENV=test $(RAILS) db:create
+	@$(API) $(RAILS) db:create
+	@$(API) RAILS_ENV=test $(RAILS) db:create
 
 .PHONY: db-migrate
 db-migrate: ## Run pending migrations against development and test
 	@echo "=> Running migrations..."
-	@$(RAILS) db:migrate
-	@RAILS_ENV=test $(RAILS) db:migrate
+	@$(API) $(RAILS) db:migrate
+	@$(API) RAILS_ENV=test $(RAILS) db:migrate
 	@echo "=> Migrations complete."
 
 .PHONY: db-rollback
 db-rollback: ## Roll back the last migration (STEP=n)
 	@echo "=> Rolling back $(or $(STEP),1) migration(s)..."
-	@$(RAILS) db:rollback STEP=$(or $(STEP),1)
+	@$(API) $(RAILS) db:rollback STEP=$(or $(STEP),1)
 
 .PHONY: db-seed
 db-seed: ## Seed the development database
 	@echo "=> Seeding database..."
-	@$(RAILS) db:seed
+	@$(API) $(RAILS) db:seed
 
 .PHONY: db-reset
 db-reset: ## Drop, recreate, migrate and seed the development database
 	@echo "$(YELLOW)=> Resetting databases...$(RESET)"
-	@$(RAILS) db:drop db:create db:migrate db:seed
-	@RAILS_ENV=test $(RAILS) db:drop db:create db:schema:load
+	@$(API) $(RAILS) db:drop db:create db:migrate db:seed
+	@$(API) RAILS_ENV=test $(RAILS) db:drop db:create db:schema:load
 	@echo "=> Databases reset."
 
 .PHONY: psql
@@ -197,37 +199,37 @@ mail-ui: ## Print the Mailpit URL
 .PHONY: test
 test: ## Run the full RSpec suite
 	@echo "=> Running tests..."
-	@$(BUNDLE) rspec
+	@$(API) $(BUNDLE) rspec
 
 .PHONY: test-models
 test-models: ## Run model specs
 	@echo "=> Running model specs..."
-	@$(BUNDLE) rspec spec/models
+	@$(API) $(BUNDLE) rspec spec/models
 
 .PHONY: test-services
 test-services: ## Run service specs
 	@echo "=> Running service specs..."
-	@$(BUNDLE) rspec spec/services
+	@$(API) $(BUNDLE) rspec spec/services
 
 .PHONY: test-requests
 test-requests: ## Run request specs
 	@echo "=> Running request specs..."
-	@$(BUNDLE) rspec spec/requests
+	@$(API) $(BUNDLE) rspec spec/requests
 
 .PHONY: test-integration
 test-integration: ## Run rswag integration specs
 	@echo "=> Running integration specs..."
-	@$(BUNDLE) rspec spec/integration
+	@$(API) $(BUNDLE) rspec spec/integration
 
 .PHONY: spec
 spec: ## Run one file or example: make spec FILE=spec/models/user_spec.rb
 	@echo "=> Running $(FILE)..."
-	@$(BUNDLE) rspec $(FILE)
+	@$(API) $(BUNDLE) rspec $(FILE)
 
 .PHONY: coverage
 coverage: ## Run the suite with SimpleCov enabled
 	@echo "=> Running tests with coverage..."
-	@COVERAGE=true $(BUNDLE) rspec
+	@$(API) COVERAGE=true $(BUNDLE) rspec
 
 # ==============================================================================
 # Quality
@@ -236,24 +238,24 @@ coverage: ## Run the suite with SimpleCov enabled
 .PHONY: lint
 lint: ## Run RuboCop
 	@echo "=> Running linter..."
-	@$(BUNDLE) rubocop
+	@$(API) $(BUNDLE) rubocop
 	@echo "=> Lint complete."
 
 .PHONY: lint-fix
 lint-fix: ## Run RuboCop with safe autocorrection
 	@echo "=> Running linter with autofix..."
-	@$(BUNDLE) rubocop -A
+	@$(API) $(BUNDLE) rubocop -A
 	@echo "=> Lint fix complete."
 
 .PHONY: security
 security: ## Run Brakeman
 	@echo "=> Running security scan..."
-	@$(BUNDLE) brakeman -q --no-pager
+	@$(API) $(BUNDLE) brakeman -q --no-pager
 
 .PHONY: swagger
 swagger: ## Regenerate swagger/v1/swagger.yaml from the integration specs
 	@echo "=> Generating swagger docs..."
-	@$(BUNDLE) rake rswag:specs:swaggerize
+	@$(API) $(BUNDLE) rake rswag:specs:swaggerize
 	@echo "=> Swagger docs generated."
 
 # ==============================================================================
@@ -263,17 +265,17 @@ swagger: ## Regenerate swagger/v1/swagger.yaml from the integration specs
 .PHONY: server
 server: ## Start the API server on PORT (default 3000)
 	@echo "=> Starting API server..."
-	@$(RAILS) server
+	@$(API) $(RAILS) server
 
 .PHONY: jobs
 jobs: ## Start the Solid Queue worker
 	@echo "=> Starting Solid Queue worker..."
-	@bin/jobs
+	@$(API) bin/jobs
 
 .PHONY: console
 console: ## Open the Rails console
-	@$(RAILS) console
+	@$(API) $(RAILS) console
 
 .PHONY: routes
 routes: ## List routes
-	@$(RAILS) routes
+	@$(API) $(RAILS) routes

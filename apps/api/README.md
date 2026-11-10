@@ -45,16 +45,16 @@ cd shop-app
 make setup
 ```
 
-`make setup` copies `.env.sample` to `.env` if missing, installs gems, starts the containers, waits for them to become healthy and prepares both the development and test databases.
+`make setup` (run from the repository root) copies `apps/api/.env.sample` to `apps/api/.env` if missing, installs gems, starts the containers, waits for them to become healthy and prepares both the development and test databases.
 
-Fill in the secrets in `.env` afterwards (`RAILS_MASTER_KEY`, Stripe, Twilio). The file is gitignored.
+Fill in the secrets in `apps/api/.env` afterwards (`RAILS_MASTER_KEY`, Stripe, Twilio). The file is gitignored.
 
 ```bash
 make server   # http://localhost:3000
 make test
 ```
 
-Host ports are deliberately non-default (Postgres `5433`, Redis `6380`, RabbitMQ `5673`) so the stack can run alongside other local projects. Change them in `.env` if you prefer.
+Host ports are deliberately non-default (Postgres `5433`, Redis `6380`, RabbitMQ `5673`) so the stack can run alongside other local projects. Change them in `apps/api/.env` if you prefer.
 
 To run the application itself in Docker instead of on the host:
 
@@ -86,13 +86,13 @@ make docker-up
 
 ## Environment variables
 
-`.env.sample` is the canonical list, grouped by subsystem. Three files are involved:
+`apps/api/.env.sample` is the canonical list, grouped by subsystem. Three files are involved:
 
 | File | Tracked | Purpose |
 | --- | --- | --- |
-| `.env.sample` | yes | Template and documentation |
-| `.env` | no | Local development values and secrets |
-| `.env.test` | yes | Test overrides — separate database, separate Redis logical db, dummy third-party keys |
+| `apps/api/.env.sample` | yes | Template and documentation |
+| `apps/api/.env` | no | Local development values and secrets |
+| `apps/api/.env.test` | yes | Test overrides — separate database, separate Redis logical db, dummy third-party keys |
 
 dotenv loads `.env.test` before `.env` in the test environment, so test values win without duplicating secrets.
 
@@ -178,10 +178,10 @@ Controller specs must **not** call `routes.draw` unless they define an anonymous
 
 ## Troubleshooting
 
-- **Port already in use** — another project is holding 5432/6379. Change `POSTGRES_PORT` / `REDIS_PORT` in `.env` and run `make restart`.
+- **Port already in use** — another project is holding 5432/6379. Change `POSTGRES_PORT` / `REDIS_PORT` in `apps/api/.env` and run `make restart`.
 - **Database connection errors** — `make ps` to check health, `make wait` to block until ready.
 - **`PendingMigrationError` in tests** — `make db-prepare`.
-- **Credentials cannot be decrypted** — `RAILS_MASTER_KEY` is missing from `.env`; `config/master.key` is not tracked.
+- **Credentials cannot be decrypted** — `RAILS_MASTER_KEY` is missing from `apps/api/.env`; `config/master.key` is not tracked.
 - **Stale containers after changing compose** — `make reset` (this deletes the volumes).
 
 ---

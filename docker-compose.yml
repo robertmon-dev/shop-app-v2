@@ -2,7 +2,7 @@ name: shop-on-rails
 
 x-app-env: &app-env
   env_file:
-    - .env
+    - apps/api/.env
   environment:
     POSTGRES_HOST: db
     POSTGRES_PORT: 5432
@@ -77,8 +77,8 @@ services:
   app:
     profiles: ["app"]
     build:
-      context: .
-      dockerfile: docker/Dockerfile
+      context: ./apps/api
+      dockerfile: Dockerfile
       target: development
     <<: *app-env
     command: >
@@ -86,7 +86,7 @@ services:
                bin/rails db:prepare &&
                bin/rails server -p 3000 -b 0.0.0.0"
     volumes:
-      - .:/rails
+      - ./apps/api:/rails
       - bundle_data:/usr/local/bundle
     ports:
       - "${PORT:-3000}:3000"
@@ -101,13 +101,13 @@ services:
   jobs:
     profiles: ["app"]
     build:
-      context: .
-      dockerfile: docker/Dockerfile
+      context: ./apps/api
+      dockerfile: Dockerfile
       target: development
     <<: *app-env
     command: bin/jobs
     volumes:
-      - .:/rails
+      - ./apps/api:/rails
       - bundle_data:/usr/local/bundle
     depends_on:
       db:
