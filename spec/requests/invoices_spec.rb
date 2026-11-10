@@ -14,7 +14,7 @@ RSpec.describe 'Api::V1::Invoices', type: :request do
 
   def headers_for(actor)
     {
-      'Authorization' => "Bearer #{Services::BearerService.encode({ user_id: actor.id }).data[:token]}",
+      'Authorization' => "Bearer #{Auth::Bearer.encode({ user_id: actor.id }).data[:token]}",
       'Accept' => 'application/json'
     }
   end
@@ -24,7 +24,7 @@ RSpec.describe 'Api::V1::Invoices', type: :request do
       get '/api/v1/invoices', headers: headers_for(admin)
 
       expect(response).to have_http_status(:ok)
-      expect(json['invoices'].size).to eq(2)
+      expect(json['data']['invoices'].size).to eq(2)
       expect(json['meta']['total_count']).to eq(2)
     end
 
@@ -32,7 +32,7 @@ RSpec.describe 'Api::V1::Invoices', type: :request do
       get '/api/v1/invoices', headers: headers_for(user)
 
       expect(response).to have_http_status(:ok)
-      expect(json['invoices'].map { |invoice| invoice['id'] }).to contain_exactly(user_invoice.id)
+      expect(json['data']['invoices'].map { |invoice| invoice['id'] }).to contain_exactly(user_invoice.id)
     end
 
     it 'rejects an unauthenticated request' do
@@ -47,7 +47,7 @@ RSpec.describe 'Api::V1::Invoices', type: :request do
       get '/api/v1/invoices/me', headers: headers_for(user)
 
       expect(response).to have_http_status(:ok)
-      expect(json['invoices'].map { |invoice| invoice['id'] }).to contain_exactly(user_invoice.id)
+      expect(json['data']['invoices'].map { |invoice| invoice['id'] }).to contain_exactly(user_invoice.id)
     end
   end
 
@@ -56,7 +56,7 @@ RSpec.describe 'Api::V1::Invoices', type: :request do
       get "/api/v1/invoices/#{user_invoice.id}", headers: headers_for(user)
 
       expect(response).to have_http_status(:ok)
-      expect(json['invoice']['invoice_number']).to eq(user_invoice.invoice_number)
+      expect(json['data']['invoice']['invoice_number']).to eq(user_invoice.invoice_number)
     end
 
     it "forbids reading another user's invoice" do
@@ -79,8 +79,8 @@ RSpec.describe 'Api::V1::Invoices', type: :request do
       get "/api/v1/invoices/#{user_invoice.id}/download", headers: headers_for(user)
 
       expect(response).to have_http_status(:ok)
-      expect(json['filename']).to eq("#{user_invoice.invoice_number.tr('/', '-')}.pdf")
-      expect(Base64.strict_decode64(json['pdf'])).to start_with('%PDF')
+      expect(json['data']['filename']).to eq("#{user_invoice.invoice_number.tr('/', '-')}.pdf")
+      expect(Base64.strict_decode64(json['data']['pdf'])).to start_with('%PDF')
     end
 
     it "forbids downloading another user's invoice" do

@@ -13,7 +13,7 @@ RSpec.describe 'Api::V1::Refunds', type: :request do
 
   def headers_for(actor)
     {
-      'Authorization' => "Bearer #{Services::BearerService.encode({ user_id: actor.id }).data[:token]}",
+      'Authorization' => "Bearer #{Auth::Bearer.encode({ user_id: actor.id }).data[:token]}",
       'Content-Type' => 'application/json',
       'Accept' => 'application/json'
     }
@@ -23,10 +23,10 @@ RSpec.describe 'Api::V1::Refunds', type: :request do
     let(:params) { { refund: { reason: 'damaged', description: 'Arrived broken' } }.to_json }
 
     it 'creates a refund for the order owner' do
-      created = Services::Result.new(success?: true, status: :created,
+      created = ApplicationService::Result.new(success?: true, status: :created,
                                      data: { refund: build(:refund, order: user_order, user: user) },
                                      message: 'Refund requested')
-      allow(Services::RefundCreationService).to receive(:call).and_return(created)
+      allow(Refunds::Creation).to receive(:call).and_return(created)
 
       post "/api/v1/orders/#{user_order.id}/refunds", params: params, headers: headers_for(user)
 
@@ -47,7 +47,7 @@ RSpec.describe 'Api::V1::Refunds', type: :request do
       get '/api/v1/refunds/me', headers: headers_for(user)
 
       expect(response).to have_http_status(:ok)
-      expect(json['refunds'].map { |refund| refund['id'] }).to contain_exactly(user_refund.id)
+      expect(json['data']['refunds'].map { |refund| refund['id'] }).to contain_exactly(user_refund.id)
     end
   end
 
@@ -58,7 +58,7 @@ RSpec.describe 'Api::V1::Refunds', type: :request do
       get "/api/v1/refunds/#{user_refund.id}", headers: headers_for(user)
 
       expect(response).to have_http_status(:ok)
-      expect(json['refund']['id']).to eq(user_refund.id)
+      expect(json['data']['refund']['id']).to eq(user_refund.id)
     end
 
     it "forbids reading another user's refund" do
@@ -72,9 +72,9 @@ RSpec.describe 'Api::V1::Refunds', type: :request do
     let!(:user_refund) { create(:refund, order: user_order, user: user) }
 
     it 'cancels the refund for its owner' do
-      cancelled = Services::Result.new(success?: true, status: :ok, data: { refund: user_refund },
+      cancelled = ApplicationService::Result.new(success?: true, status: :ok, data: { refund: user_refund },
                                        message: 'Refund cancelled')
-      allow_any_instance_of(Services::RefundManagementService).to receive(:cancel).and_return(cancelled)
+      allow_any_instance_of(Refunds::Management).to receive(:cancel).and_return(cancelled)
 
       post "/api/v1/refunds/#{user_refund.id}/cancel", headers: headers_for(user)
 
@@ -86,8 +86,8 @@ RSpec.describe 'Api::V1::Refunds', type: :request do
     let!(:user_refund) { create(:refund, order: user_order, user: user) }
 
     it 'deletes the refund as an admin' do
-      destroyed = Services::Result.new(success?: true, status: :no_content, message: 'Refund deleted')
-      allow(Services::RefundDeletionService).to receive(:call).and_return(destroyed)
+      destroyed = ApplicationService::Result.new(success?: true, status: :no_content, message: 'Refund deleted')
+      allow(Refunds::Deletion).to receive(:call).and_return(destroyed)
 
       delete "/api/v1/refunds/#{user_refund.id}", headers: headers_for(admin)
 

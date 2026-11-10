@@ -18,7 +18,7 @@ describe 'Diagnostics API' do
           }
 
           before do
-            allow(Services::DiagnosticsService).to receive(:readiness_probe).and_return(
+            allow(Diagnostics::Probe).to receive(:readiness_probe).and_return(
               { status: :ok, message: 'Application is ready.', details: { database: 'ok' } }
             )
           end
@@ -41,7 +41,7 @@ describe 'Diagnostics API' do
           }
 
           before do
-            allow(Services::DiagnosticsService).to receive(:readiness_probe).and_return(
+            allow(Diagnostics::Probe).to receive(:readiness_probe).and_return(
               { status: :service_unavailable, message: 'Application is not ready.',
                 errors: ['Database connection failed'], details: { database: 'error' } }
             )
@@ -73,7 +73,7 @@ describe 'Diagnostics API' do
           }
 
           before do
-            allow(Services::DiagnosticsService).to receive(:health_probe).and_return(
+            allow(Diagnostics::Probe).to receive(:health_probe).and_return(
               { status: :ok, message: 'Application is healthy.', details: { database: 'ok', redis: 'ok' } }
             )
           end

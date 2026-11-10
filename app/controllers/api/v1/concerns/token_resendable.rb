@@ -6,33 +6,30 @@ module Api
       module TokenResendable
         extend ActiveSupport::Concern
 
-        MESSAGE_VIEW = 'shared/message'
-
         def request_2fa_code_resend
-          render_auth(Auth::Authentication.send_2fa_code(@user), MESSAGE_VIEW)
+          respond_with_message(Auth::Authentication.resend_2fa_code(@user))
         end
 
         def request_activation_code_resend
           return render_already_done(:activated) unless @user.unactivated?
 
-          render_auth(Users::Management.resend_activation_code(@user), MESSAGE_VIEW)
+          respond_with_message(Users::Management.resend_activation_code(@user))
         end
 
         def request_verification_code_resend
           return render_already_done(:verified) unless @user.unverified?
 
-          render_auth(Users::Management.resend_verification_code(@user), MESSAGE_VIEW)
+          respond_with_message(Users::Management.resend_verification_code(@user))
         end
 
         def request_reset_code_resend
-          render_auth(Auth::PasswordReset.request(params[:mail]), MESSAGE_VIEW)
+          respond_with_message(Auth::PasswordReset.request(params[:mail]))
         end
 
         private
 
         def render_already_done(state)
-          render json: { errors: ["User is already #{state}."], message: "User is already #{state}." },
-                 status: :not_acceptable
+          render_failure(message: "User is already #{state}.", status: :not_acceptable)
         end
       end
     end

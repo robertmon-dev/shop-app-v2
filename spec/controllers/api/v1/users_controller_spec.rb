@@ -21,9 +21,9 @@ RSpec.describe Api::V1::UsersController, type: :controller do
     user
   end
 
-  let(:user_creation_service) { instance_double(Services::UserCreationService) }
-  let(:user_profile_service) { instance_double(Services::UserProfileService) }
-  let(:authentication_service) { instance_double(Services::AuthenticationService) }
+  let(:user_creation_service) { instance_double(Users::Creation) }
+  let(:user_profile_service) { instance_double(Users::Profile) }
+  let(:authentication_service) { instance_double(Auth::Authentication) }
 
   before do
     allow(controller).to receive(:authenticate_user!).and_return(true)
@@ -31,17 +31,17 @@ RSpec.describe Api::V1::UsersController, type: :controller do
     newly_created_user = build_stubbed(:user)
     allow(newly_created_user).to receive(:user_detail).and_return(nil)
 
-    allow(Services::UserCreationService).to receive(:call).and_return(
-      Services::Result.new(success?: true, data: { user: newly_created_user }, status: :created)
+    allow(Users::Creation).to receive(:call).and_return(
+      ApplicationService::Result.new(success?: true, data: { user: newly_created_user }, status: :created)
     )
   end
 
   describe 'POST #create' do
     let(:user_params) { { user: attributes_for(:user, :with_detail) } }
 
-    it 'calls UserCreationService with user_params' do
+    it 'calls Users::Creation with user_params' do
       post :create, params: user_params, format: :json
-      expect(Services::UserCreationService).to have_received(:call)
+      expect(Users::Creation).to have_received(:call)
     end
 
     it 'returns a created status on success' do
@@ -58,7 +58,7 @@ RSpec.describe Api::V1::UsersController, type: :controller do
         get :show, params: { id: other_user.id }, format: :json
         expect(response).to have_http_status(:ok)
         json_response = JSON.parse(response.body)
-        expect(json_response['user']['id']).to eq(other_user.id)
+        expect(json_response['data']['user']['id']).to eq(other_user.id)
       end
     end
 
@@ -89,7 +89,7 @@ RSpec.describe Api::V1::UsersController, type: :controller do
         get :me, format: :json
         expect(response).to have_http_status(:ok)
         json_response = JSON.parse(response.body)
-        expect(json_response['user']['id']).to eq(regular_user.id)
+        expect(json_response['data']['user']['id']).to eq(regular_user.id)
       end
     end
 
@@ -107,7 +107,7 @@ RSpec.describe Api::V1::UsersController, type: :controller do
 
     before do
       allow(user_profile_service).to receive(:update_profile).and_return(
-        Services::Result.new(success?: true, data: { user: regular_user }, status: :ok)
+        ApplicationService::Result.new(success?: true, data: { user: regular_user }, status: :ok)
       )
     end
 
@@ -139,7 +139,7 @@ RSpec.describe Api::V1::UsersController, type: :controller do
         get :index, format: :json
         expect(response).to have_http_status(:ok)
         json_response = JSON.parse(response.body)
-        expect(json_response['users'].size).to be >= 3
+        expect(json_response['data']['users'].size).to be >= 3
       end
     end
 
@@ -158,7 +158,7 @@ RSpec.describe Api::V1::UsersController, type: :controller do
 
     before do
       allow(user_profile_service).to receive(:update_role).and_return(
-        Services::Result.new(success?: true, data: { user: regular_user }, status: :ok)
+        ApplicationService::Result.new(success?: true, data: { user: regular_user }, status: :ok)
       )
     end
 
@@ -184,8 +184,8 @@ RSpec.describe Api::V1::UsersController, type: :controller do
 
   describe 'POST #logout' do
     before do
-      allow(Services::AuthenticationService).to receive(:blacklist_token).and_return(
-        Services::Result.new(success?: true, status: :ok, message: 'Successfully logged out.')
+      allow(Auth::Authentication).to receive(:blacklist_token).and_return(
+        ApplicationService::Result.new(success?: true, status: :ok, message: 'Successfully logged out.')
       )
       request.headers['Authorization'] = 'Bearer test_token'
     end
@@ -195,7 +195,7 @@ RSpec.describe Api::V1::UsersController, type: :controller do
 
       it 'calls the blacklist_token service' do
         post :logout, format: :json
-        expect(Services::AuthenticationService).to have_received(:blacklist_token).with('test_token')
+        expect(Auth::Authentication).to have_received(:blacklist_token).with('test_token')
         expect(response).to have_http_status(:ok)
       end
     end
@@ -211,7 +211,7 @@ RSpec.describe Api::V1::UsersController, type: :controller do
         get :actions, params: { id: regular_user.id }, format: :json
         expect(response).to have_http_status(:ok)
         json_response = JSON.parse(response.body)
-        expect(json_response['actions'].first['id']).to eq(action.id)
+        expect(json_response['data']['actions'].first['id']).to eq(action.id)
       end
     end
 

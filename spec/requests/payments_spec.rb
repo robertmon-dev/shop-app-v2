@@ -28,7 +28,7 @@ RSpec.describe 'Api::V1::Payments', type: :request do
   end
 
   def token_for(user)
-    Services::BearerService.encode({ user_id: user.id }).data[:token]
+    Auth::Bearer.encode({ user_id: user.id }).data[:token]
   end
 
   describe 'GET /api/v1/payments' do
@@ -36,7 +36,7 @@ RSpec.describe 'Api::V1::Payments', type: :request do
       it 'returns all payments' do
         get '/api/v1/payments', headers: admin_headers
         expect(response).to have_http_status(:ok)
-        expect(json['payments'].size).to eq(Payment.count)
+        expect(json['data']['payments'].size).to eq(Payment.count)
       end
     end
 
@@ -60,7 +60,7 @@ RSpec.describe 'Api::V1::Payments', type: :request do
       it "can view another user's payment" do
         get "/api/v1/payments/#{user_payment.id}", headers: admin_headers
         expect(response).to have_http_status(:ok)
-        expect(json['payment']['id']).to eq(user_payment.id)
+        expect(json['data']['payment']['id']).to eq(user_payment.id)
       end
     end
 
@@ -68,7 +68,7 @@ RSpec.describe 'Api::V1::Payments', type: :request do
       it 'can view their own payment' do
         get "/api/v1/payments/#{user_payment.id}", headers: user_headers
         expect(response).to have_http_status(:ok)
-        expect(json['payment']['id']).to eq(user_payment.id)
+        expect(json['data']['payment']['id']).to eq(user_payment.id)
       end
     end
 
@@ -92,22 +92,23 @@ RSpec.describe 'Api::V1::Payments', type: :request do
 
     context 'when creation is successful' do
       before do
-        successful_result = Services::Result.new(success?: true, data: { payment: user_payment }, status: :created)
-        allow(Services::PaymentCreationService).to receive(:call).and_return(successful_result)
+        successful_result = ApplicationService::Result.new(success?: true, data: { client_secret: 'pi_secret_123' },
+                                                       status: :ok)
+        allow(Payments::Creation).to receive(:call).and_return(successful_result)
       end
 
-      it 'creates a payment and returns a 201 status' do
+      it 'returns the client secret of the payment intent' do
         post '/api/v1/payments', headers: user_headers, params: valid_params
-        expect(response).to have_http_status(:created)
-        expect(json['payment']['id']).to eq(user_payment.id)
+        expect(response).to have_http_status(:ok)
+        expect(json['data']['client_secret']).to eq('pi_secret_123')
       end
     end
 
     context 'when creation fails due to a processing error' do
       before do
-        failed_result = Services::Result.new(success?: false, errors: ['Your card was declined.'],
+        failed_result = ApplicationService::Result.new(success?: false, errors: ['Your card was declined.'],
                                              status: :unprocessable_content)
-        allow(Services::PaymentCreationService).to receive(:call).and_return(failed_result)
+        allow(Payments::Creation).to receive(:call).and_return(failed_result)
       end
 
       it 'returns a 422 status with errors' do
@@ -120,9 +121,9 @@ RSpec.describe 'Api::V1::Payments', type: :request do
     context 'when a user tries to pay for an order they do not own' do
       let(:unauthorized_params) { { payment: { order_id: other_user_order.id, stripe_token: 'tok_visa' } }.to_json }
       before do
-        forbidden_result = Services::Result.new(success?: false,
+        forbidden_result = ApplicationService::Result.new(success?: false,
                                                 errors: ['You are not authorized to pay for this order.'], status: :forbidden)
-        allow(Services::PaymentCreationService).to receive(:call)
+        allow(Payments::Creation).to receive(:call)
           .with(hash_including(user: user, order_id: other_user_order.id))
           .and_return(forbidden_result)
       end

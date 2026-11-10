@@ -27,20 +27,20 @@ RSpec.describe 'Api::V1::Products', type: :request do
   let!(:product) { create(:product) }
 
   def token_for(user)
-    Services::BearerService.encode({ user_id: user.id }).data[:token]
+    Auth::Bearer.encode({ user_id: user.id }).data[:token]
   end
 
   describe 'GET /api/v1/products' do
     it 'returns a list of products' do
       products_relation = Product.where(id: product.id)
 
-      allow(Services::ProductCachingService).to receive(:fetch_all).and_return(products_relation)
+      allow(Products::Caching).to receive(:fetch_all).and_return(products_relation)
 
       get '/api/v1/products', headers: public_headers
 
       expect(response).to have_http_status(:ok)
-      expect(json['products'].size).to eq(1)
-      expect(json['products'].first['id']).to eq(product.id)
+      expect(json['data']['products'].size).to eq(1)
+      expect(json['data']['products'].first['id']).to eq(product.id)
       expect(json['meta']['total_count']).to eq(1)
     end
   end
@@ -48,21 +48,21 @@ RSpec.describe 'Api::V1::Products', type: :request do
   describe 'GET /api/v1/products/:id' do
     context 'when product exists' do
       it 'returns the product' do
-        allow(Services::ProductCachingService).to receive(:fetch_one).with(product.id.to_s).and_return(
-          Services::Result.new(success?: true, data: { product: product }, status: :ok,
+        allow(Products::Caching).to receive(:fetch_one).with(product.id.to_s).and_return(
+          ApplicationService::Result.new(success?: true, data: { product: product }, status: :ok,
                                message: 'Product has been found')
         )
 
         get "/api/v1/products/#{product.id}"
         expect(response).to have_http_status(:ok)
-        expect(json['product']['id']).to eq(product.id)
+        expect(json['data']['product']['id']).to eq(product.id)
       end
     end
 
     context 'when product does not exist' do
       it 'returns a not found error' do
-        allow(Services::ProductCachingService).to receive(:fetch_one).with('non-existent').and_return(
-          Services::Result.new(success?: false, errors: ['Product not found'], status: :not_found,
+        allow(Products::Caching).to receive(:fetch_one).with('non-existent').and_return(
+          ApplicationService::Result.new(success?: false, errors: ['Product not found'], status: :not_found,
                                message: 'Product not found')
         )
 
@@ -78,18 +78,18 @@ RSpec.describe 'Api::V1::Products', type: :request do
     context 'as an admin' do
       it 'creates a product when params are valid' do
         created_product = build_stubbed(:product, name: 'New Gadget', price: 99.99)
-        successful_result = Services::Result.new(success?: true, data: { product: created_product }, status: :created)
-        allow(Services::ProductCreationService).to receive(:call).and_return(successful_result)
+        successful_result = ApplicationService::Result.new(success?: true, data: { product: created_product }, status: :created)
+        allow(Products::Creation).to receive(:call).and_return(successful_result)
 
         post '/api/v1/products', headers: admin_headers, params: valid_params
         expect(response).to have_http_status(:created)
-        expect(json['product']['name']).to eq('New Gadget')
+        expect(json['data']['product']['name']).to eq('New Gadget')
       end
 
       it 'returns an error when params are invalid' do
-        failed_result = Services::Result.new(success?: false, errors: ["Name can't be blank"],
+        failed_result = ApplicationService::Result.new(success?: false, errors: ["Name can't be blank"],
                                              status: :unprocessable_content)
-        allow(Services::ProductCreationService).to receive(:call).and_return(failed_result)
+        allow(Products::Creation).to receive(:call).and_return(failed_result)
 
         post '/api/v1/products', headers: admin_headers, params: { product: { name: '' } }.to_json
         expect(response).to have_http_status(:unprocessable_content)
@@ -110,8 +110,8 @@ RSpec.describe 'Api::V1::Products', type: :request do
 
     context 'as an admin' do
       it 'updates the product' do
-        successful_result = Services::Result.new(success?: true, data: { product: product }, status: :ok)
-        allow(Services::ProductUpdateService).to receive(:call).and_return(successful_result)
+        successful_result = ApplicationService::Result.new(success?: true, data: { product: product }, status: :ok)
+        allow(Products::Update).to receive(:call).and_return(successful_result)
 
         patch "/api/v1/products/#{product.id}", headers: admin_headers, params: update_params
         expect(response).to have_http_status(:ok)
@@ -129,8 +129,8 @@ RSpec.describe 'Api::V1::Products', type: :request do
   describe 'DELETE /api/v1/products/:id' do
     context 'as an admin' do
       it 'deletes the product' do
-        successful_result = Services::Result.new(success?: true, status: :no_content)
-        allow(Services::ProductDeletionService).to receive(:call).and_return(successful_result)
+        successful_result = ApplicationService::Result.new(success?: true, status: :no_content)
+        allow(Products::Deletion).to receive(:call).and_return(successful_result)
 
         delete "/api/v1/products/#{product.id}", headers: admin_headers
         expect(response).to have_http_status(:no_content)
@@ -146,14 +146,14 @@ RSpec.describe 'Api::V1::Products', type: :request do
   end
 
   describe 'Product Interactions' do
-    let(:interaction_service) { instance_double(Services::ProductInteractionService) }
+    let(:interaction_service) { instance_double(Products::Interaction) }
     before do
-      allow(Services::ProductInteractionService).to receive(:new).with(an_instance_of(User)).and_return(interaction_service)
+      allow(Products::Interaction).to receive(:new).with(an_instance_of(User)).and_return(interaction_service)
     end
 
     describe 'POST /api/v1/products/:id/like' do
       it 'allows an authenticated user to like a product' do
-        successful_result = Services::Result.new(success?: true, data: { product: product }, status: :ok)
+        successful_result = ApplicationService::Result.new(success?: true, data: { product: product }, status: :ok)
         allow(interaction_service).to receive(:like).with(product).and_return(successful_result)
 
         post "/api/v1/products/#{product.id}/like", headers: user_headers
@@ -170,7 +170,7 @@ RSpec.describe 'Api::V1::Products', type: :request do
       let(:rate_params) { { product_rating: { rating: 5, comment: 'Great!' } }.to_json }
 
       it 'allows an authenticated user to rate a product' do
-        successful_result = Services::Result.new(success?: true, data: { product: product }, status: :ok)
+        successful_result = ApplicationService::Result.new(success?: true, data: { product: product }, status: :ok)
         allow(interaction_service).to receive(:rate).with(product, 5, 'Great!').and_return(successful_result)
 
         post "/api/v1/products/#{product.id}/rate", headers: user_headers, params: rate_params
@@ -182,7 +182,7 @@ RSpec.describe 'Api::V1::Products', type: :request do
       let(:comment_params) { { product_comment: { content: 'This is a comment.' } }.to_json }
 
       it 'allows an authenticated user to add a comment' do
-        successful_result = Services::Result.new(success?: true, data: { product: product }, status: :ok)
+        successful_result = ApplicationService::Result.new(success?: true, data: { product: product }, status: :ok)
         allow(interaction_service).to receive(:add_comment).with(product, 'This is a comment.',
                                                                  nil).and_return(successful_result)
 
@@ -204,7 +204,7 @@ RSpec.describe 'Api::V1::Products', type: :request do
       end.to change(ProductPhoto, :count).by(1)
 
       expect(response).to have_http_status(:created)
-      expect(json['product_photo']['id']).to be_present
+      expect(json['data']['product_photo']['id']).to be_present
     end
 
     it 'is forbidden for a regular user' do

@@ -16,13 +16,15 @@ module Api
       private
 
       def render_probe(probe)
-        @status = probe[:status]
-        @message = probe[:message]
-        @errors = probe[:errors] || []
-        @success = @errors.empty?
-        @data = probe[:details] ? { details: probe[:details] } : {}
+        errors = probe[:errors] || []
+        return render_unavailable(probe, errors) if errors.any?
 
-        render :_probe_result, status: @status
+        respond_with_view(:probe, status: probe[:status], message: probe[:message], probe: probe)
+      end
+
+      def render_unavailable(probe, errors)
+        render_failure(message: probe[:message] || 'Service unavailable', errors: errors, status: probe[:status],
+                       data: probe[:details])
       end
     end
   end

@@ -13,11 +13,11 @@ RSpec.describe Api::V1::PaymentsController, type: :controller do
   let!(:admin) { create(:user, :with_detail, role: :admin) }
   let!(:order) { create(:order, user: user) }
   let!(:payment) { create(:payment, order: order) }
-  let(:payment_creation_service) { instance_double(Services::PaymentCreationService) }
+  let(:payment_creation_service) { instance_double(Payments::Creation) }
 
   before do
-    allow(Services::PaymentCreationService).to receive(:call).and_return(
-      Services::Result.new(success?: true, data: { payment: payment }, status: :created,
+    allow(Payments::Creation).to receive(:call).and_return(
+      ApplicationService::Result.new(success?: true, data: { payment: payment }, status: :created,
                            message: 'Payment initiated successfully.')
     )
   end
@@ -33,7 +33,7 @@ RSpec.describe Api::V1::PaymentsController, type: :controller do
         get :index, format: :json
         expect(response).to have_http_status(:ok)
         json_response = JSON.parse(response.body)
-        expect(json_response['payments'].count).to eq(Payment.count)
+        expect(json_response['data']['payments'].count).to eq(Payment.count)
       end
     end
 
@@ -59,26 +59,27 @@ RSpec.describe Api::V1::PaymentsController, type: :controller do
         get :show, params: { id: payment.id }, format: :json
         expect(response).to have_http_status(:ok)
         json_response = JSON.parse(response.body)
-        expect(json_response['payment']['id']).to eq(payment.id)
+        expect(json_response['data']['payment']['id']).to eq(payment.id)
       end
     end
   end
 
   describe 'POST #create' do
     let(:valid_params) { { payment: { order_id: order.id, stripe_token: 'tok_visa' } } }
-    let(:service_result) { Services::Result.new(success?: true, data: { payment: payment }, status: :created, message: 'Payment initiated successfully.') }
+    let(:service_result) { ApplicationService::Result.new(success?: true, data: { client_secret: 'pi_secret_123' }, status: :ok,
+                                                     message: 'Payment initiated successfully.') }
 
     before do
       allow(controller).to receive(:current_user).and_return(user)
-      allow(Services::PaymentCreationService).to receive(:call).and_return(service_result)
+      allow(Payments::Creation).to receive(:call).and_return(service_result)
     end
 
     it 'creates a new payment and returns success' do
       post :create, params: valid_params, format: :json
-      expect(response).to have_http_status(:created)
+      expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)
       expect(json_response['message']).to eq('Payment initiated successfully.')
-      expect(json_response['payment']['id']).to eq(payment.id)
+      expect(json_response['data']['client_secret']).to eq('pi_secret_123')
     end
   end
 end

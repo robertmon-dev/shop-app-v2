@@ -9,8 +9,6 @@ json.cache! ['product_comment_partial', product_comment.id, product_comment.upda
   json.updated_at product_comment.updated_at
 
   if product_comment.replies.any?
-    json.replies product_comment.replies do |child|
-      json.partial! 'api/v1/products/product_comment', product_comment: child
-    end
+    json.replies product_comment.replies, partial: 'api/v1/products/product_comment', as: :product_comment
   end
 end

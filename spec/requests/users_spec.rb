@@ -26,7 +26,7 @@ RSpec.describe 'Api::V1::Users', type: :request do
   let(:public_headers) { { 'Content-Type' => 'application/json', 'Accept' => 'application/json' } }
 
   def token_for(user)
-    Services::BearerService.encode({ user_id: user.id }).data[:token]
+    Auth::Bearer.encode({ user_id: user.id }).data[:token]
   end
 
   describe 'POST /api/v1/users' do
@@ -34,8 +34,8 @@ RSpec.describe 'Api::V1::Users', type: :request do
 
     context 'when creation is successful' do
       before do
-        successful_result = Services::Result.new(success?: true, data: { user: user }, status: :created)
-        allow(Services::UserCreationService).to receive(:call).and_return(successful_result)
+        successful_result = ApplicationService::Result.new(success?: true, data: { user: user }, status: :created)
+        allow(Users::Creation).to receive(:call).and_return(successful_result)
       end
 
       it 'creates a user and returns a 201 status' do
@@ -46,9 +46,9 @@ RSpec.describe 'Api::V1::Users', type: :request do
 
     context 'when creation fails' do
       before do
-        failed_result = Services::Result.new(success?: false, errors: ['Email has already been taken'],
+        failed_result = ApplicationService::Result.new(success?: false, errors: ['Email has already been taken'],
                                              status: :unprocessable_content)
-        allow(Services::UserCreationService).to receive(:call).and_return(failed_result)
+        allow(Users::Creation).to receive(:call).and_return(failed_result)
       end
 
       it 'returns a 422 status with errors' do
@@ -64,7 +64,7 @@ RSpec.describe 'Api::V1::Users', type: :request do
       it 'returns a paginated list of all users' do
         get '/api/v1/users', headers: admin_headers
         expect(response).to have_http_status(:ok)
-        expect(json).to have_key('users')
+        expect(json['data']).to have_key('users')
         expect(json).to have_key('meta')
       end
     end
@@ -81,7 +81,7 @@ RSpec.describe 'Api::V1::Users', type: :request do
     it 'returns the current user profile' do
       get '/api/v1/users/me', headers: user_headers
       expect(response).to have_http_status(:ok)
-      expect(json['user']['id']).to eq(user.id)
+      expect(json['data']['user']['id']).to eq(user.id)
     end
 
     it 'returns unauthorized if no token is provided' do
@@ -92,8 +92,8 @@ RSpec.describe 'Api::V1::Users', type: :request do
 
   describe 'POST /api/v1/users/logout' do
     it 'blacklists the token and returns a success message' do
-      successful_result = Services::Result.new(success?: true, message: 'Successfully logged out', status: :ok)
-      allow(Services::AuthenticationService).to receive(:blacklist_token).and_return(successful_result)
+      successful_result = ApplicationService::Result.new(success?: true, message: 'Successfully logged out', status: :ok)
+      allow(Auth::Authentication).to receive(:blacklist_token).and_return(successful_result)
 
       post '/api/v1/users/logout', headers: user_headers
       expect(response).to have_http_status(:ok)
@@ -102,10 +102,10 @@ RSpec.describe 'Api::V1::Users', type: :request do
   end
 
   describe 'Member actions for /api/v1/users/:id' do
-    let(:user_profile_service) { instance_double(Services::UserProfileService) }
+    let(:user_profile_service) { instance_double(Users::Profile) }
 
     before do
-      allow(Services::UserProfileService).to receive(:new).with(an_instance_of(User)).and_return(user_profile_service)
+      allow(Users::Profile).to receive(:new).with(an_instance_of(User)).and_return(user_profile_service)
     end
 
     describe 'GET /api/v1/users/:id' do
@@ -113,7 +113,7 @@ RSpec.describe 'Api::V1::Users', type: :request do
         it 'returns their own profile' do
           get "/api/v1/users/#{user.id}", headers: user_headers
           expect(response).to have_http_status(:ok)
-          expect(json['user']['id']).to eq(user.id)
+          expect(json['data']['user']['id']).to eq(user.id)
         end
       end
 
@@ -137,7 +137,7 @@ RSpec.describe 'Api::V1::Users', type: :request do
 
       context 'as the user themselves' do
         it 'updates their profile' do
-          successful_result = Services::Result.new(success?: true, data: { user: user }, status: :ok)
+          successful_result = ApplicationService::Result.new(success?: true, data: { user: user }, status: :ok)
           allow(user_profile_service).to receive(:update_profile).and_return(successful_result)
 
           patch "/api/v1/users/#{user.id}", headers: user_headers, params: update_params
@@ -147,7 +147,7 @@ RSpec.describe 'Api::V1::Users', type: :request do
 
       context 'as an admin' do
         it "updates another user's profile" do
-          successful_result = Services::Result.new(success?: true, data: { user: user }, status: :ok)
+          successful_result = ApplicationService::Result.new(success?: true, data: { user: user }, status: :ok)
           allow(user_profile_service).to receive(:update_profile).and_return(successful_result)
 
           patch "/api/v1/users/#{user.id}", headers: admin_headers, params: update_params
@@ -161,7 +161,7 @@ RSpec.describe 'Api::V1::Users', type: :request do
 
       context 'as an admin' do
         it "updates a user's role" do
-          successful_result = Services::Result.new(success?: true, data: { user: user }, status: :ok)
+          successful_result = ApplicationService::Result.new(success?: true, data: { user: user }, status: :ok)
           allow(user_profile_service).to receive(:update_role).with('moderator').and_return(successful_result)
 
           patch "/api/v1/users/#{user.id}/role/update", headers: admin_headers, params: role_params
@@ -180,7 +180,7 @@ RSpec.describe 'Api::V1::Users', type: :request do
     describe 'DELETE /api/v1/users/:id' do
       context 'as the user themselves' do
         it 'deletes their own account' do
-          successful_result = Services::Result.new(success?: true, status: :no_content)
+          successful_result = ApplicationService::Result.new(success?: true, status: :no_content)
           allow(user_profile_service).to receive(:destroy_user).and_return(successful_result)
 
           delete "/api/v1/users/#{user.id}", headers: user_headers
@@ -190,7 +190,7 @@ RSpec.describe 'Api::V1::Users', type: :request do
 
       context 'as an admin' do
         it "deletes another user's account" do
-          successful_result = Services::Result.new(success?: true, status: :no_content)
+          successful_result = ApplicationService::Result.new(success?: true, status: :no_content)
           allow(user_profile_service).to receive(:destroy_user).and_return(successful_result)
 
           delete "/api/v1/users/#{user.id}", headers: admin_headers

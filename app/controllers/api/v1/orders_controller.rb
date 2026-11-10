@@ -42,7 +42,7 @@ module Api
 
       def set_order
         @order = Order.find_by(id: params[:id])
-        return render json: { errors: ['Order not found.'] }, status: :not_found unless @order
+        return render_failure(message: 'Order not found.', status: :not_found) unless @order
 
         authorize! action_name.to_sym, @order
       end
@@ -50,7 +50,7 @@ module Api
       def set_product
         product_id = params[:product_id] || add_product_params[:product_id]
         @product = Product.find_by(id: product_id)
-        render json: { errors: ['Product not found.'] }, status: :not_found unless @product
+        render_failure(message: 'Product not found.', status: :not_found) unless @product
       end
 
       def added_quantity = add_product_params[:quantity].to_i

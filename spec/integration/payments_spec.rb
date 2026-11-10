@@ -4,9 +4,9 @@ require 'swagger_helper'
 
 describe 'Payments API' do
   let!(:regular_user) { create(:user) }
-  let(:regular_user_token) { Services::BearerService.encode({ user_id: regular_user.id }).data[:token] }
+  let(:regular_user_token) { Auth::Bearer.encode({ user_id: regular_user.id }).data[:token] }
   let!(:admin_user) { create(:user, :admin) }
-  let(:admin_user_token) { Services::BearerService.encode({ user_id: admin_user.id }).data[:token] }
+  let(:admin_user_token) { Auth::Bearer.encode({ user_id: admin_user.id }).data[:token] }
   let!(:other_user) { create(:user) }
 
   before do
@@ -61,8 +61,8 @@ describe 'Payments API' do
           schema '$ref' => '#/components/schemas/Payment'
 
           before do
-            allow(Services::PaymentCreationService).to receive(:call).and_return(
-              Services::Result.new(success?: true, status: :created,
+            allow(Payments::Creation).to receive(:call).and_return(
+              ApplicationService::Result.new(success?: true, status: :created,
                                    data: { payment: create(:payment, :paid, order: order) })
             )
           end
@@ -107,7 +107,7 @@ describe 'Payments API' do
       end
 
       context 'as another user (not owner)' do
-        let(:another_user_token) { Services::BearerService.encode({ user_id: other_user.id }).data[:token] }
+        let(:another_user_token) { Auth::Bearer.encode({ user_id: other_user.id }).data[:token] }
         let(:Authorization) { "Bearer #{another_user_token}" }
         response '403', 'forbidden' do
           run_test!

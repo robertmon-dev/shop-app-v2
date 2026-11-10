@@ -634,10 +634,19 @@ paths:
               schema:
                 type: object
                 properties:
-                  products:
-                    type: array
-                    items:
-                      "$ref": "#/components/schemas/Product"
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      products:
+                        type: array
+                        items:
+                          "$ref": "#/components/schemas/Product"
+                    required:
+                    - products
                   meta:
                     type: object
                     properties:
@@ -658,7 +667,8 @@ paths:
                     - total_pages
                     - total_count
                 required:
-                - products
+                - success
+                - data
                 - meta
     post:
       summary: Creates a product (Admin/Moderator only)
@@ -673,7 +683,22 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Product"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      product:
+                        "$ref": "#/components/schemas/Product"
+                    required:
+                    - product
+                required:
+                - success
+                - data
         '403':
           description: forbidden
       requestBody:
@@ -691,12 +716,32 @@ paths:
                     price:
                       type: number
                       example: 199.99
+                    vat_rate:
+                      type: number
+                      example: 0.23
+                    weight_kg:
+                      type: number
+                      example: 1.5
+                    height_cm:
+                      type: number
+                      example: 10.0
+                    width_cm:
+                      type: number
+                      example: 10.0
+                    length_cm:
+                      type: number
+                      example: 10.0
                     description:
                       type: string
                       example: The best gadget you have ever seen.
                   required:
                   - name
                   - price
+                  - vat_rate
+                  - weight_kg
+                  - height_cm
+                  - width_cm
+                  - length_cm
   "/api/v1/products/{id}":
     get:
       summary: Retrieves a single product
@@ -715,7 +760,22 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Product"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      product:
+                        "$ref": "#/components/schemas/Product"
+                    required:
+                    - product
+                required:
+                - success
+                - data
         '404':
           description: product not found
     put:
@@ -737,7 +797,22 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Product"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      product:
+                        "$ref": "#/components/schemas/Product"
+                    required:
+                    - product
+                required:
+                - success
+                - data
         '403':
           description: forbidden
       requestBody:
@@ -799,7 +874,22 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Product"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      product:
+                        "$ref": "#/components/schemas/Product"
+                    required:
+                    - product
+                required:
+                - success
+                - data
         '401':
           description: unauthorized
   "/api/v1/products/{id}/rate":
@@ -822,7 +912,22 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Product"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      product:
+                        "$ref": "#/components/schemas/Product"
+                    required:
+                    - product
+                required:
+                - success
+                - data
       requestBody:
         content:
           application/json:
@@ -860,7 +965,22 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/Product"
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      product:
+                        "$ref": "#/components/schemas/Product"
+                    required:
+                    - product
+                required:
+                - success
+                - data
       requestBody:
         content:
           application/json:

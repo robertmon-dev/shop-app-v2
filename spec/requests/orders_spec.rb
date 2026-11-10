@@ -26,15 +26,15 @@ RSpec.describe 'Api::V1::Orders', type: :request do
   let!(:user_order) { create(:order, user: user) }
   let!(:other_user_order) { create(:order, user: other_user) }
 
-  let(:order_management_service) { instance_double(Services::OrderManagementService) }
+  let(:order_management_service) { instance_double(Orders::Management) }
 
   def token_for(user)
-    Services::BearerService.encode({ user_id: user.id }).data[:token]
+    Auth::Bearer.encode({ user_id: user.id }).data[:token]
   end
 
   shared_context 'with order management service mock' do
     before do
-      allow(Services::OrderManagementService).to receive(:new).and_return(order_management_service)
+      allow(Orders::Management).to receive(:new).and_return(order_management_service)
     end
   end
 
@@ -43,7 +43,7 @@ RSpec.describe 'Api::V1::Orders', type: :request do
       it 'returns all orders' do
         get '/api/v1/orders', headers: admin_headers
         expect(response).to have_http_status(:ok)
-        expect(json['orders'].size).to eq(Order.count)
+        expect(json['data']['orders'].size).to eq(Order.count)
       end
     end
 
@@ -51,8 +51,8 @@ RSpec.describe 'Api::V1::Orders', type: :request do
       it "returns only the user's own orders" do
         get '/api/v1/orders', headers: user_headers
         expect(response).to have_http_status(:ok)
-        expect(json['orders'].size).to eq(user.orders.count)
-        expect(json['orders'].first['id']).to eq(user_order.id)
+        expect(json['data']['orders'].size).to eq(user.orders.count)
+        expect(json['data']['orders'].first['id']).to eq(user_order.id)
       end
     end
   end
@@ -61,7 +61,7 @@ RSpec.describe 'Api::V1::Orders', type: :request do
     it "returns the current user's orders" do
       get '/api/v1/orders/me', headers: user_headers
       expect(response).to have_http_status(:ok)
-      expect(json['orders'].first['id']).to eq(user_order.id)
+      expect(json['data']['orders'].first['id']).to eq(user_order.id)
     end
   end
 
@@ -69,26 +69,26 @@ RSpec.describe 'Api::V1::Orders', type: :request do
     it 'allows a user to see their own order' do
       get "/api/v1/orders/#{user_order.id}", headers: user_headers
       expect(response).to have_http_status(:ok)
-      expect(json['order']['id']).to eq(user_order.id)
+      expect(json['data']['order']['id']).to eq(user_order.id)
     end
   end
 
   describe 'POST /api/v1/orders' do
     context 'when creation is successful' do
-      let(:success_result) { Services::Result.new(success?: true, data: { order: user_order }, status: :created) }
-      before { allow(Services::OrderCreationService).to receive(:call).and_return(success_result) }
+      let(:success_result) { ApplicationService::Result.new(success?: true, data: { order: user_order }, status: :created) }
+      before { allow(Orders::Creation).to receive(:call).and_return(success_result) }
 
       it 'returns a 201 status and the order' do
         post '/api/v1/orders', headers: user_headers, params: {}.to_json
         expect(response).to have_http_status(:created)
-        expect(json['order']['id']).to eq(user_order.id)
+        expect(json['data']['order']['id']).to eq(user_order.id)
       end
     end
 
     context 'when creation fails' do
       # Poprawka warningu: :unprocessable_entity -> :unprocessable_content
-      let(:failure_result) { Services::Result.new(success?: false, errors: ['Cart is empty'], status: :unprocessable_content) }
-      before { allow(Services::OrderCreationService).to receive(:call).and_return(failure_result) }
+      let(:failure_result) { ApplicationService::Result.new(success?: false, errors: ['Cart is empty'], status: :unprocessable_content) }
+      before { allow(Orders::Creation).to receive(:call).and_return(failure_result) }
 
       it 'returns a 422 status with errors' do
         post '/api/v1/orders', headers: user_headers, params: {}.to_json
@@ -104,7 +104,7 @@ RSpec.describe 'Api::V1::Orders', type: :request do
 
     context 'as an admin' do
       it 'updates the order' do
-        allow(order_management_service).to receive(:update).and_return(Services::Result.new(success?: true,
+        allow(order_management_service).to receive(:update).and_return(ApplicationService::Result.new(success?: true,
                                                                                             data: { order: user_order }, status: :ok))
         patch "/api/v1/orders/#{user_order.id}", headers: admin_headers, params: update_params
         expect(response).to have_http_status(:ok)
@@ -125,7 +125,7 @@ RSpec.describe 'Api::V1::Orders', type: :request do
 
     it 'adds a product to an order' do
       allow(order_management_service).to receive(:add_product).with(product,
-                                                                    2).and_return(Services::Result.new(success?: true,
+                                                                    2).and_return(ApplicationService::Result.new(success?: true,
                                                                                                        data: { order: user_order }, status: :ok))
       post "/api/v1/orders/#{user_order.id}/products", headers: admin_headers, params: add_product_params
       expect(response).to have_http_status(:ok)
@@ -136,7 +136,7 @@ RSpec.describe 'Api::V1::Orders', type: :request do
     include_context 'with order management service mock'
 
     it 'allows a user to cancel their own order' do
-      allow(order_management_service).to receive(:cancel).and_return(Services::Result.new(success?: true,
+      allow(order_management_service).to receive(:cancel).and_return(ApplicationService::Result.new(success?: true,
                                                                                           data: { order: user_order }, status: :ok))
       post "/api/v1/orders/#{user_order.id}/cancel", headers: user_headers
       expect(response).to have_http_status(:ok)
@@ -148,7 +148,7 @@ RSpec.describe 'Api::V1::Orders', type: :request do
 
     context 'as an admin' do
       it 'deletes the order' do
-        allow(order_management_service).to receive(:destroy).and_return(Services::Result.new(success?: true,
+        allow(order_management_service).to receive(:destroy).and_return(ApplicationService::Result.new(success?: true,
                                                                                              status: :no_content))
         delete "/api/v1/orders/#{user_order.id}", headers: admin_headers
         expect(response).to have_http_status(:no_content)

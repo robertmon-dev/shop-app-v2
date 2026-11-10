@@ -25,8 +25,8 @@ describe 'Stripe Webhooks API' do
 
       context 'with a valid payload and signature' do
         before do
-          allow(Services::StripeWebhookHandlerService).to receive(:call).and_return(
-            Services::Result.new(success?: true, status: :ok, message: 'Webhook received and processed.')
+          allow(Webhooks::StripeHandler).to receive(:call).and_return(
+            ApplicationService::Result.new(success?: true, status: :ok, message: 'Webhook received and processed.')
           )
         end
 
@@ -41,8 +41,8 @@ describe 'Stripe Webhooks API' do
 
       context 'with an invalid signature' do
         before do
-          allow(Services::StripeWebhookHandlerService).to receive(:call).and_return(
-            Services::Result.new(success?: false, status: :bad_request, errors: ['Invalid signature'])
+          allow(Webhooks::StripeHandler).to receive(:call).and_return(
+            ApplicationService::Result.new(success?: false, status: :bad_request, errors: ['Invalid signature'])
           )
         end
 
@@ -57,8 +57,8 @@ describe 'Stripe Webhooks API' do
 
       context 'with a server error during processing' do
         before do
-          allow(Services::StripeWebhookHandlerService).to receive(:call).and_return(
-            Services::Result.new(success?: false, status: :internal_server_error, errors: ['Webhook processing failed'])
+          allow(Webhooks::StripeHandler).to receive(:call).and_return(
+            ApplicationService::Result.new(success?: false, status: :internal_server_error, errors: ['Webhook processing failed'])
           )
         end
 

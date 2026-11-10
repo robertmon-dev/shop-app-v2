@@ -11,7 +11,7 @@ RSpec.describe 'Api::V1::Categories', type: :request do
 
   def headers_for(actor)
     {
-      'Authorization' => "Bearer #{Services::BearerService.encode({ user_id: actor.id }).data[:token]}",
+      'Authorization' => "Bearer #{Auth::Bearer.encode({ user_id: actor.id }).data[:token]}",
       'Content-Type' => 'application/json',
       'Accept' => 'application/json'
     }
@@ -22,7 +22,7 @@ RSpec.describe 'Api::V1::Categories', type: :request do
       get '/api/v1/categories', headers: headers_for(user)
 
       expect(response).to have_http_status(:ok)
-      expect(json['categories'].map { |entry| entry['name'] }).to include('Tools')
+      expect(json['data']['categories'].map { |entry| entry['name'] }).to include('Tools')
     end
   end
 
@@ -33,7 +33,7 @@ RSpec.describe 'Api::V1::Categories', type: :request do
       end.to change(Category, :count).by(1)
 
       expect(response).to have_http_status(:created)
-      expect(json['category']['name']).to eq('Garden')
+      expect(json['data']['category']['name']).to eq('Garden')
     end
 
     it 'is forbidden for a regular user' do

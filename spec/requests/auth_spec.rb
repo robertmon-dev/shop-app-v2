@@ -46,6 +46,12 @@ RSpec.describe 'Api::V1::Auth', type: :request do
         expect(response).to have_http_status(:unauthorized)
         expect(json['errors']).to include('Invalid 2FA code.')
       end
+
+      it 'does not issue a token when the code is missing' do
+        post '/api/v1/auth/verify_2fa', params: { mail: user.mail }
+        expect(response).to have_http_status(:unauthorized)
+        expect(response.body).not_to include('token')
+      end
     end
   end
 

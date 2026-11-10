@@ -17,17 +17,11 @@ module Api
       end
 
       def render_cart(result = nil)
-        result ? bind_data(result) : reset_response_state
+        bind_data(result) if result
+        return render_result_failure if result && !@success
+
         assign(cart_service.cart_summary)
-
-        render :show, status: @status, locals: { current_user: current_user }
-      end
-
-      def reset_response_state
-        @status = :ok
-        @errors = []
-        @success = true
-        @message = ''
+        render :show, status: result ? @status : :ok
       end
 
       def add_params = params.permit(:quantity)

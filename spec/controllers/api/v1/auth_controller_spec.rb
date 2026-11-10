@@ -5,21 +5,21 @@ require 'rails_helper'
 RSpec.describe Api::V1::AuthController, type: :controller do
   render_views
 
-  let(:auth_service) { class_double(Services::AuthenticationService) }
-  let(:user_management_service) { class_double(Services::UserManagementService) }
-  let(:password_service) { class_double(Services::PasswordResetService) }
+  let(:auth_service) { class_double(Auth::Authentication) }
+  let(:user_management_service) { class_double(Users::Management) }
+  let(:password_service) { class_double(Auth::PasswordReset) }
   let(:user) { create(:user, :with_detail, mail: 'test@example.com', password: 'password') }
 
   before do
-    stub_const('Services::AuthenticationService', auth_service)
-    stub_const('Services::UserManagementService', user_management_service)
-    stub_const('Services::PasswordResetService', password_service)
+    stub_const('Auth::Authentication', auth_service)
+    stub_const('Users::Management', user_management_service)
+    stub_const('Auth::PasswordReset', password_service)
   end
 
   describe 'POST #login' do
     context 'with valid credentials and no 2FA' do
       it 'returns a successful response with user data and token' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: true, data: { token: 'some_token', user: user }, status: :ok,
                                  message: 'Logged in successfully.', errors: [])
         allow(auth_service).to receive(:login).with('test@example.com', 'password').and_return(result)
@@ -34,7 +34,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with valid credentials and 2FA enabled' do
       it 'returns an accepted status with a message to verify 2FA' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: true, status: :accepted, data: { user_id: user.id },
                                  message: 'Two-factor authentication code sent. Please verify.', errors: [])
         allow(auth_service).to receive(:login).with('test@example.com', 'password').and_return(result)
@@ -47,7 +47,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with invalid credentials' do
       it 'returns an unauthorized status' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: false, status: :unauthorized, errors: ['Invalid email or password.'],
                                  message: 'Authentication failed.', data: {})
         allow(auth_service).to receive(:login).with('test@example.com', 'wrong_password').and_return(result)
@@ -60,7 +60,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with missing parameters' do
       it 'returns an unauthorized status' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: false, status: :unauthorized, errors: ['Invalid email or password.'],
                                  message: 'Authentication failed.', data: {})
         allow(auth_service).to receive(:login).with('test@example.com', nil).and_return(result)
@@ -80,7 +80,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with valid 2FA code' do
       it 'returns a successful response with token' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: true, data: { token: '2fa_token' }, status: :ok,
                                  message: '2FA verified successfully.', errors: [])
         allow(auth_service).to receive(:verify_2fa).with(user, 'valid_code').and_return(result)
@@ -93,7 +93,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with invalid 2FA code' do
       it 'returns an unauthorized status' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: false, status: :unauthorized, errors: ['Invalid 2FA code.'],
                                  message: 'Invalid two-factor authentication code.', data: {})
         allow(auth_service).to receive(:verify_2fa).with(user, 'invalid_code').and_return(result)
@@ -121,7 +121,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with valid activation code' do
       it 'returns a successful response' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: true, data: { user: user }, status: :ok,
                                  message: 'Account activated successfully.', errors: [])
         allow(user_management_service).to receive(:activate).with(user, 'valid_code').and_return(result)
@@ -134,7 +134,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with invalid activation code' do
       it 'returns an unprocessable entity status' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: false, status: :unprocessable_content, errors: ['Invalid code.'],
                                  message: 'Activation failed.', data: {})
         allow(user_management_service).to receive(:activate).with(user, 'invalid_code').and_return(result)
@@ -161,7 +161,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with valid verification code' do
       it 'returns a successful response' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: true, data: { user: user }, status: :ok,
                                  message: 'Account verified successfully.', errors: [])
         allow(user_management_service).to receive(:verify).with(user, 'valid_code').and_return(result)
@@ -174,7 +174,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with invalid verification code' do
       it 'returns an unprocessable entity status' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: false, status: :unprocessable_content, errors: ['Invalid code.'],
                                  message: 'Verification failed.', data: {})
         allow(user_management_service).to receive(:verify).with(user, 'invalid_code').and_return(result)
@@ -196,7 +196,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
   describe 'POST #request_reset' do
     context 'with valid email' do
       it 'returns a successful response' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: true, status: :ok, message: 'Password reset requested.',
                                  errors: [], data: {})
         allow(password_service).to receive(:request).with('test@example.com').and_return(result)
@@ -209,7 +209,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'when user is not found' do
       it 'returns a successful response to prevent enumeration' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: true, status: :ok, message: 'If the email exists...',
                                  errors: [], data: {})
         allow(password_service).to receive(:request).with('unknown@example.com').and_return(result)
@@ -224,7 +224,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
   describe 'PATCH #confirm_reset' do
     context 'with valid reset code and matching passwords' do
       it 'returns a successful response' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: true, status: :ok, message: 'Password reset successfully',
                                  errors: [], data: {})
         allow(password_service).to receive(:reset).with('valid_code', 'new_password', 'new_password').and_return(result)
@@ -238,7 +238,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with invalid reset code' do
       it 'returns an unprocessable entity status' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: false, status: :unprocessable_content, errors: ['Invalid code'],
                                  message: 'Reset failed.', data: {})
         allow(password_service).to receive(:reset).with('invalid_code', 'new_password',
@@ -253,7 +253,7 @@ RSpec.describe Api::V1::AuthController, type: :controller do
 
     context 'with mismatched passwords' do
       it 'returns an unprocessable entity status' do
-        result = instance_double(Services::Result,
+        result = instance_double(ApplicationService::Result,
                                  success?: false, status: :unprocessable_content, errors: ['Passwords do not match'],
                                  message: 'Passwords do not match.', data: {})
         allow(password_service).to receive(:reset).with('valid_code', 'new_password',

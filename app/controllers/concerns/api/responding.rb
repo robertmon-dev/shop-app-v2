@@ -14,42 +14,44 @@ module Api
 
     def respond_with(result, view = :show, locals: {})
       bind_data(result)
-      return render_errors unless @success
+      return render_result_failure unless @success
 
       assign_resources
       render view, status: @status, locals: locals
-    end
-
-    def respond_with_view(view, status: :ok, locals: {}, **assigns)
-      @status = status
-      @errors = []
-      @message = nil
-      assign(assigns)
-      render view, status: status, locals: locals
     end
 
     def respond_with_message(result)
       bind_data(result)
-      return render_errors unless @success
+      return render_result_failure unless @success
 
-      render json: { message: @message }, status: @status
+      render 'shared/empty', status: @status
     end
 
     def respond_with_destroy(result)
       bind_data(result)
-      return render_errors unless @success
+      return render_result_failure unless @success
 
       head :no_content
     end
 
-    def respond_in_view(result, view, locals: {})
-      bind_data(result)
-      assign_resources
-      render view, status: @status, locals: locals
+    def respond_with_view(view, status: :ok, message: nil, locals: {}, **assigns)
+      @status = status
+      @success = true
+      @errors = []
+      @message = message
+      assign(assigns)
+      @pagination = assigns.values.find { |value| value.respond_to?(:current_page) }
+      render view, status: status, locals: locals
     end
 
-    def render_errors
-      render json: { errors: @errors }, status: @status
+    def render_failure(message:, status:, errors: [message], data: nil)
+      body = { success: false, message: message, errors: Array(errors) }
+      body[:data] = data if data.present?
+      render json: body, status: status
+    end
+
+    def render_result_failure
+      render_failure(message: @message, errors: @errors, status: @status)
     end
 
     def assign_resources

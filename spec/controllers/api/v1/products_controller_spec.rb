@@ -14,10 +14,10 @@ RSpec.describe Api::V1::ProductsController, type: :controller do
   let!(:moderator) { create(:user, :with_detail, role: :moderator) }
 
   let!(:product) { create(:product) }
-  let(:product_creation_service) { instance_double(Services::ProductCreationService) }
-  let(:product_update_service) { instance_double(Services::ProductUpdateService) }
-  let(:product_deletion_service) { instance_double(Services::ProductDeletionService) }
-  let(:product_interaction_service) { instance_double(Services::ProductInteractionService) }
+  let(:product_creation_service) { instance_double(Products::Creation) }
+  let(:product_update_service) { instance_double(Products::Update) }
+  let(:product_deletion_service) { instance_double(Products::Deletion) }
+  let(:product_interaction_service) { instance_double(Products::Interaction) }
 
   let(:product_likes_collection) { instance_double('ActiveRecord::Relation', count: 1, maximum: Time.current) }
   let(:comments_collection) { instance_double('ActiveRecord::Relation', count: 0, where: [], maximum: Time.current) }
@@ -34,33 +34,33 @@ RSpec.describe Api::V1::ProductsController, type: :controller do
 
     allow(product).to receive(:product_rates).and_return(double('product_rates', count: 1))
 
-    allow(Services::ProductCreationService).to receive(:call).and_return(
-      Services::Result.new(success?: true, data: { product: product }, status: :created,
+    allow(Products::Creation).to receive(:call).and_return(
+      ApplicationService::Result.new(success?: true, data: { product: product }, status: :created,
                            message: 'Product created successfully.')
     )
-    allow(Services::ProductUpdateService).to receive(:call).and_return(
-      Services::Result.new(success?: true, data: { product: product }, status: :ok,
+    allow(Products::Update).to receive(:call).and_return(
+      ApplicationService::Result.new(success?: true, data: { product: product }, status: :ok,
                            message: 'Product updated successfully.')
     )
-    allow(Services::ProductDeletionService).to receive(:call).and_return(
-      Services::Result.new(success?: true, data: {}, status: :no_content, message: 'Product deleted successfully.')
+    allow(Products::Deletion).to receive(:call).and_return(
+      ApplicationService::Result.new(success?: true, data: {}, status: :no_content, message: 'Product deleted successfully.')
     )
     allow(controller).to receive(:product_interaction_service).and_return(product_interaction_service)
     allow(product_interaction_service).to receive(:like).and_return(
-      Services::Result.new(success?: true, data: { product: product }, status: :ok,
+      ApplicationService::Result.new(success?: true, data: { product: product }, status: :ok,
                            message: 'Product liked successfully.')
     )
     allow(product_interaction_service).to receive(:rate).and_return(
-      Services::Result.new(success?: true, data: { product: product }, status: :ok,
+      ApplicationService::Result.new(success?: true, data: { product: product }, status: :ok,
                            message: 'Product rated successfully.')
     )
     allow(product_interaction_service).to receive(:add_comment).and_return(
-      Services::Result.new(success?: true, data: { product: product }, status: :created,
+      ApplicationService::Result.new(success?: true, data: { product: product }, status: :created,
                            message: 'Comment added successfully.')
     )
 
-    allow(Services::ProductCachingService).to receive(:fetch_one).and_return(
-      Services::Result.new(success?: true, data: { product: product }, status: :ok,
+    allow(Products::Caching).to receive(:fetch_one).and_return(
+      ApplicationService::Result.new(success?: true, data: { product: product }, status: :ok,
                            message: 'Product has been found')
     )
   end
@@ -80,16 +80,16 @@ RSpec.describe Api::V1::ProductsController, type: :controller do
       allow(paginated_double).to receive(:map).and_return([product.id])
       allow(paginated_double).to receive(:maximum).with(:updated_at).and_return(product.updated_at)
 
-      allow(Services::ProductCachingService).to receive(:fetch_all).and_return(paginated_double)
+      allow(Products::Caching).to receive(:fetch_all).and_return(paginated_double)
     end
 
     it 'returns a paginated list of products' do
       products_relation = Product.where(id: product.id)
-      allow(Services::ProductCachingService).to receive(:fetch_all).and_return(products_relation)
+      allow(Products::Caching).to receive(:fetch_all).and_return(products_relation)
       get :index, format: :json
       expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)
-      expect(json_response['products']).not_to be_empty
+      expect(json_response['data']['products']).not_to be_empty
     end
   end
 
@@ -99,14 +99,14 @@ RSpec.describe Api::V1::ProductsController, type: :controller do
         get :show, params: { id: product.id }, format: :json
         expect(response).to have_http_status(:ok)
         json_response = JSON.parse(response.body)
-        expect(json_response['product']['id']).to eq(product.id)
+        expect(json_response['data']['product']['id']).to eq(product.id)
       end
     end
 
     context 'when product is not found' do
       before do
-        allow(Services::ProductCachingService).to receive(:fetch_one).and_return(
-          Services::Result.new(success?: false, errors: ['Product not found'], status: :not_found,
+        allow(Products::Caching).to receive(:fetch_one).and_return(
+          ApplicationService::Result.new(success?: false, errors: ['Product not found'], status: :not_found,
                                message: 'Product not found')
         )
       end

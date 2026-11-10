@@ -38,7 +38,7 @@ describe 'Authentication API' do
 
       context 'when 2FA is required' do
         before do
-          allow(Services::SmsService).to receive(:dial_2fa_code).and_return(true)
+          allow(Notifications::Sms).to receive(:dial_2fa_code).and_return(true)
         end
         response '202', '2FA verification required' do
           let(:user_with_2fa) { create(:user, :two_factor_enabled, password: 'password') }

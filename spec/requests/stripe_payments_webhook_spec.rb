@@ -18,8 +18,8 @@ RSpec.describe 'API V1 Stripe Webhooks', type: :request do
         let(:'Stripe-Signature') { 't=123,v1=abc' }
 
         before do
-          successful_result = Services::Result.new(success?: true, message: 'Webhook processed', status: :ok)
-          allow(Services::StripeWebhookHandlerService).to receive(:call).and_return(successful_result)
+          successful_result = ApplicationService::Result.new(success?: true, message: 'Webhook processed', status: :ok)
+          allow(Webhooks::StripeHandler).to receive(:call).and_return(successful_result)
         end
 
         run_test!
@@ -30,9 +30,9 @@ RSpec.describe 'API V1 Stripe Webhooks', type: :request do
         let(:'Stripe-Signature') { 'invalid_signature' }
 
         before do
-          bad_request_result = Services::Result.new(success?: false, errors: ['Invalid signature'],
+          bad_request_result = ApplicationService::Result.new(success?: false, errors: ['Invalid signature'],
                                                     status: :bad_request)
-          allow(Services::StripeWebhookHandlerService).to receive(:call).and_return(bad_request_result)
+          allow(Webhooks::StripeHandler).to receive(:call).and_return(bad_request_result)
         end
 
         run_test!
@@ -43,9 +43,9 @@ RSpec.describe 'API V1 Stripe Webhooks', type: :request do
         let(:'Stripe-Signature') { 't=123,v1=abc' }
 
         before do
-          error_result = Services::Result.new(success?: false, errors: ['Order not found'],
+          error_result = ApplicationService::Result.new(success?: false, errors: ['Order not found'],
                                               status: :unprocessable_content)
-          allow(Services::StripeWebhookHandlerService).to receive(:call).and_return(error_result)
+          allow(Webhooks::StripeHandler).to receive(:call).and_return(error_result)
         end
 
         run_test!

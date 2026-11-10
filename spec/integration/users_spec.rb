@@ -4,9 +4,9 @@ require 'swagger_helper'
 
 describe 'Users API' do
   let!(:regular_user) { create(:user, :with_detail) }
-  let(:regular_user_token) { Services::BearerService.encode({ user_id: regular_user.id }).data[:token] }
+  let(:regular_user_token) { Auth::Bearer.encode({ user_id: regular_user.id }).data[:token] }
   let!(:admin_user) { create(:user, :admin, :with_detail) }
-  let(:admin_user_token) { Services::BearerService.encode({ user_id: admin_user.id }).data[:token] }
+  let(:admin_user_token) { Auth::Bearer.encode({ user_id: admin_user.id }).data[:token] }
   let!(:other_user) { create(:user) }
 
   let(:user_response_schema) do

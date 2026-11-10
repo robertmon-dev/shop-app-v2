@@ -13,35 +13,35 @@ RSpec.describe Api::V1::OrdersController, type: :controller do
   let!(:admin) { create(:user, :with_detail, role: :admin) }
   let!(:order) { create(:order, user: user) }
   let(:product) { create(:product) }
-  let(:order_creation_service) { instance_double(Services::OrderCreationService) }
-  let(:order_management_service) { instance_double(Services::OrderManagementService) }
+  let(:order_creation_service) { instance_double(Orders::Creation) }
+  let(:order_management_service) { instance_double(Orders::Management) }
 
   before do
     controller.instance_variable_set(:@order, order)
 
-    allow(Services::OrderCreationService).to receive(:call).and_return(
-      Services::Result.new(success?: true, data: { order: order }, status: :created,
+    allow(Orders::Creation).to receive(:call).and_return(
+      ApplicationService::Result.new(success?: true, data: { order: order }, status: :created,
                            message: 'Order created successfully.')
     )
 
-    allow(Services::OrderManagementService).to receive(:new).with(order).and_return(order_management_service)
+    allow(Orders::Management).to receive(:new).with(order).and_return(order_management_service)
 
     allow(order_management_service).to receive(:add_product).and_return(
-      Services::Result.new(success?: true, data: { order: order }, status: :ok, message: 'Product added successfully.')
+      ApplicationService::Result.new(success?: true, data: { order: order }, status: :ok, message: 'Product added successfully.')
     )
     allow(order_management_service).to receive(:remove_product).and_return(
-      Services::Result.new(success?: true, data: { order: order }, status: :ok,
+      ApplicationService::Result.new(success?: true, data: { order: order }, status: :ok,
                            message: 'Product removed successfully.')
     )
     allow(order_management_service).to receive(:destroy).and_return(
-      Services::Result.new(success?: true, status: :no_content)
+      ApplicationService::Result.new(success?: true, status: :no_content)
     )
     allow(order_management_service).to receive(:update).and_return(
-      Services::Result.new(success?: true, data: { order: order }, status: :ok,
+      ApplicationService::Result.new(success?: true, data: { order: order }, status: :ok,
                            message: 'Order updated successfully.')
     )
     allow(order_management_service).to receive(:cancel).and_return(
-      Services::Result.new(success?: true, data: { order: order }, status: :ok,
+      ApplicationService::Result.new(success?: true, data: { order: order }, status: :ok,
                            message: 'Order cancelled successfully.')
     )
   end
@@ -57,7 +57,7 @@ RSpec.describe Api::V1::OrdersController, type: :controller do
         get :index, format: :json
         expect(response).to have_http_status(:ok)
         json_response = JSON.parse(response.body)
-        expect(json_response['orders'].count).to eq(Order.count)
+        expect(json_response['data']['orders'].count).to eq(Order.count)
       end
     end
 
@@ -71,7 +71,7 @@ RSpec.describe Api::V1::OrdersController, type: :controller do
         get :index, format: :json
         expect(response).to have_http_status(:ok)
         json_response = JSON.parse(response.body)
-        expect(json_response['orders'].count).to eq(user.orders.count)
+        expect(json_response['data']['orders'].count).to eq(user.orders.count)
       end
     end
   end
@@ -84,7 +84,7 @@ RSpec.describe Api::V1::OrdersController, type: :controller do
       get :me, format: :json
       expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)
-      expect(json_response['orders'].first['id']).to eq(order.id)
+      expect(json_response['data']['orders'].first['id']).to eq(order.id)
     end
   end
 
@@ -94,22 +94,22 @@ RSpec.describe Api::V1::OrdersController, type: :controller do
       get :show, params: { id: order.id }, format: :json
       expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)
-      expect(json_response['order']['id']).to eq(order.id)
+      expect(json_response['data']['order']['id']).to eq(order.id)
     end
   end
 
   describe 'POST #create' do
-    let(:service_result) { Services::Result.new(success?: true, data: { order: order }, status: :created, message: 'Order created successfully from cart.') }
+    let(:service_result) { ApplicationService::Result.new(success?: true, data: { order: order }, status: :created, message: 'Order created successfully from cart.') }
     before do
       allow(controller).to receive(:current_user).and_return(user)
-      allow(Services::OrderCreationService).to receive(:call).and_return(service_result)
+      allow(Orders::Creation).to receive(:call).and_return(service_result)
     end
     it 'creates an order from the cart and returns success' do
       post :create, format: :json
       expect(response).to have_http_status(:created)
       json_response = JSON.parse(response.body)
       expect(json_response['message']).to eq('Order created successfully from cart.')
-      expect(json_response['order']['id']).to eq(order.id)
+      expect(json_response['data']['order']['id']).to eq(order.id)
     end
   end
 

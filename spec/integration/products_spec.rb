@@ -4,9 +4,9 @@ require 'swagger_helper'
 
 describe 'Products API' do
   let!(:regular_user) { create(:user) }
-  let(:regular_user_token) { Services::BearerService.encode({ user_id: regular_user.id }).data[:token] }
+  let(:regular_user_token) { Auth::Bearer.encode({ user_id: regular_user.id }).data[:token] }
   let!(:admin_user) { create(:user, :admin) }
-  let(:admin_user_token) { Services::BearerService.encode({ user_id: admin_user.id }).data[:token] }
+  let(:admin_user_token) { Auth::Bearer.encode({ user_id: admin_user.id }).data[:token] }
 
   before do
     allow_any_instance_of(ProductObserver).to receive(:after_create).and_return(true)
@@ -24,25 +24,8 @@ describe 'Products API' do
       parameter name: :page, in: :query, type: :integer, required: false, description: 'Page number for pagination'
 
       response '200', 'products list' do
-        schema type: :object,
-               properties: {
-                 products: {
-                   type: :array,
-                   items: { '$ref' => '#/components/schemas/Product' }
-                 },
-                 meta: {
-                   type: :object,
-                   properties: {
-                     current_page: { type: :integer },
-                     next_page: { type: :integer, nullable: true },
-                     prev_page: { type: :integer, nullable: true },
-                     total_pages: { type: :integer },
-                     total_count: { type: :integer }
-                   },
-                   required: %w[current_page total_pages total_count]
-                 }
-               },
-               required: %w[products meta]
+        schema envelope_schema({ products: { type: :array, items: { '$ref' => '#/components/schemas/Product' } } },
+                               meta: true)
         before { create_list(:product, 3) }
         run_test!
       end
@@ -80,9 +63,7 @@ describe 'Products API' do
                        length_cm: 10 } }
         end
         response '201', 'product created' do
-          schema type: :object,
-                 properties: { product: { '$ref' => '#/components/schemas/Product' } },
-                 required: ['product']
+          schema envelope_schema({ product: { '$ref' => '#/components/schemas/Product' } })
           run_test!
         end
       end
@@ -110,9 +91,7 @@ describe 'Products API' do
       parameter name: :id, in: :path, type: :string, format: :uuid, required: true
 
       response '200', 'product found' do
-        schema type: :object,
-               properties: { product: { '$ref' => '#/components/schemas/Product' } },
-               required: ['product']
+        schema envelope_schema({ product: { '$ref' => '#/components/schemas/Product' } })
         run_test!
       end
 
@@ -148,9 +127,7 @@ describe 'Products API' do
       context 'as an admin' do
         let(:Authorization) { "Bearer #{admin_user_token}" }
         response '200', 'product updated' do
-          schema type: :object,
-                 properties: { product: { '$ref' => '#/components/schemas/Product' } },
-                 required: ['product']
+          schema envelope_schema({ product: { '$ref' => '#/components/schemas/Product' } })
           run_test!
         end
       end
@@ -197,9 +174,7 @@ describe 'Products API' do
         let(:Authorization) { "Bearer #{regular_user_token}" }
         # POPRAWKA 3: Zmieniamy oczekiwany status na 201
         response '201', 'product liked successfully' do
-          schema type: :object,
-                 properties: { product: { '$ref' => '#/components/schemas/Product' } },
-                 required: ['product']
+          schema envelope_schema({ product: { '$ref' => '#/components/schemas/Product' } })
           run_test!
         end
       end
@@ -239,9 +214,7 @@ describe 'Products API' do
       let(:Authorization) { "Bearer #{regular_user_token}" }
 
       response '201', 'product rated successfully' do
-        schema type: :object,
-               properties: { product: { '$ref' => '#/components/schemas/Product' } },
-               required: ['product']
+        schema envelope_schema({ product: { '$ref' => '#/components/schemas/Product' } })
         run_test!
       end
     end
@@ -273,9 +246,7 @@ describe 'Products API' do
       let(:Authorization) { "Bearer #{regular_user_token}" }
 
       response '201', 'comment added successfully' do
-        schema type: :object,
-               properties: { product: { '$ref' => '#/components/schemas/Product' } },
-               required: ['product']
+        schema envelope_schema({ product: { '$ref' => '#/components/schemas/Product' } })
         run_test!
       end
     end

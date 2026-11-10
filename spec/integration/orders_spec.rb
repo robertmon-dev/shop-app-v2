@@ -4,9 +4,9 @@ require 'swagger_helper'
 
 describe 'Orders API' do
   let!(:regular_user) { create(:user, :with_location) }
-  let(:regular_user_token) { Services::BearerService.encode({ user_id: regular_user.id }).data[:token] }
+  let(:regular_user_token) { Auth::Bearer.encode({ user_id: regular_user.id }).data[:token] }
   let!(:admin_user) { create(:user, :admin) }
-  let(:admin_user_token) { Services::BearerService.encode({ user_id: admin_user.id }).data[:token] }
+  let(:admin_user_token) { Auth::Bearer.encode({ user_id: admin_user.id }).data[:token] }
   let!(:other_user) { create(:user) }
 
   before do
@@ -111,7 +111,7 @@ describe 'Orders API' do
       end
 
       context 'as another user (not owner)' do
-        let(:another_user_token) { Services::BearerService.encode({ user_id: other_user.id }).data[:token] }
+        let(:another_user_token) { Auth::Bearer.encode({ user_id: other_user.id }).data[:token] }
         let(:Authorization) { "Bearer #{another_user_token}" }
         response '403', 'forbidden' do
           run_test!

@@ -7,7 +7,7 @@ RSpec.describe 'Api::V1::Carts', type: :request do
   let!(:user) { create(:user, :with_detail) }
   let!(:product) { create(:product, price: 100.0) }
   let(:auth_headers) do
-    token_result = Services::BearerService.encode({ user_id: user.id })
+    token_result = Auth::Bearer.encode({ user_id: user.id })
     { 'Authorization' => "Bearer #{token_result.data[:token]}" }
   end
 

@@ -104,22 +104,36 @@ dotenv loads `.env.test` before `.env` in the test environment, so test values w
 app
 ├── controllers/api            ApplicationController + Responding concern
 │   └── v1                     one controller per resource, actions are one-liners
-├── services/services          business logic, every call returns Services::Result
-│   └── concerns               Handlers (error wrapping) + ResultHelpers (result factories)
+├── services                   business logic, one thematic folder per domain
+│   ├── application_service.rb base class: .call, result factories, error wrapping
+│   ├── application_service/   Result, Results, ErrorHandling, CodeValidation
+│   └── auth, carts, orders, products, refunds, users, ...   e.g. Orders::Creation
 ├── observers                  rails-observers hooks for side effects
 ├── models
 ├── jobs                       Solid Queue jobs
-└── views/api/v1               Jbuilder templates, one directory per controller
+└── views
+    ├── layouts/api            the response envelope, applied to every action
+    └── api/v1                 Jbuilder templates, they describe only the payload
 ```
 
-Controllers do three things: load/authorize the resource, call a service, hand the `Services::Result` to the responder. All rendering decisions live in `Api::Responding`:
+Services live in a folder named after the domain and inherit from `ApplicationService`, so every one is called the same way (`Products::Creation.call(params)`) and returns an `ApplicationService::Result`. Controllers do three things: load/authorize the resource, call a service, hand the result to the responder. All rendering decisions live in `Api::Responding`:
 
 ```ruby
 def index   = respond_with_view(:index, orders: accessible_orders)
-def create  = respond_with(Services::OrderCreationService.call(**create_params))
+def create  = respond_with(Orders::Creation.call(**create_params))
 def cancel  = respond_with(order_management_service.cancel)
 def destroy = respond_with_destroy(order_management_service.destroy)
 ```
+
+Every response has the same envelope. Views render only the `data` part; `layouts/api` adds the rest:
+
+```json
+{ "success": true, "message": "Order cancelled successfully", "data": { "order": { "...": "..." } } }
+{ "success": true, "data": { "orders": [] }, "meta": { "current_page": 1, "total_count": 0 } }
+{ "success": false, "message": "Validation failed", "errors": ["Name can't be blank"] }
+```
+
+Methods are kept to 20 lines (`Metrics/MethodLength`).
 
 Services never render and never touch `params`; controllers never contain business rules.
 
@@ -143,7 +157,7 @@ make test-models
 make test-services
 make test-requests
 make test-integration
-make spec FILE=spec/services/cart_service_spec.rb:16
+make spec FILE=spec/services/carts/management_spec.rb:16
 ```
 
 Controller specs must **not** call `routes.draw` unless they define an anonymous `controller do` block — on a named controller spec `routes` is the application route set and `draw` clears it, which breaks routing for every spec that runs afterwards in the same process.

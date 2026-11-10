@@ -4,7 +4,7 @@ require 'swagger_helper'
 
 describe 'Cart API' do
   let!(:user) { create(:user) }
-  let(:token) { Services::BearerService.encode({ user_id: user.id }).data[:token] }
+  let(:token) { Auth::Bearer.encode({ user_id: user.id }).data[:token] }
   let(:Authorization) { "Bearer #{token}" }
 
   path '/api/v1/cart' do

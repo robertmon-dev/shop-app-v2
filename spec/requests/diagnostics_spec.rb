@@ -12,7 +12,7 @@ RSpec.describe 'Api::V1::Diagnostics', type: :request do
   describe 'GET /api/v1/diagnostics/readiness' do
     context 'when the application is ready' do
       before do
-        allow(Services::DiagnosticsService).to receive(:readiness_probe).and_return(
+        allow(Diagnostics::Probe).to receive(:readiness_probe).and_return(
           {
             status: :ok,
             message: 'Application is ready to serve traffic.',
@@ -29,13 +29,13 @@ RSpec.describe 'Api::V1::Diagnostics', type: :request do
       it 'returns a successful readiness response' do
         expect(json['success']).to be true
         expect(json['message']).to eq('Application is ready to serve traffic.')
-        expect(json.dig('data', 'details', 'database')).to eq('ok')
+        expect(json.dig('data', 'database')).to eq('ok')
       end
     end
 
     context 'when the application is not ready' do
       before do
-        allow(Services::DiagnosticsService).to receive(:readiness_probe).and_return(
+        allow(Diagnostics::Probe).to receive(:readiness_probe).and_return(
           {
             status: :service_unavailable,
             message: 'Application is not ready.',
@@ -53,7 +53,7 @@ RSpec.describe 'Api::V1::Diagnostics', type: :request do
       it 'returns an unsuccessful readiness response with errors' do
         expect(json['success']).to be false
         expect(json['errors']).to include('Database connection failed')
-        expect(json.dig('data', 'details', 'database')).to eq('down')
+        expect(json.dig('data', 'database')).to eq('down')
       end
     end
   end
@@ -61,7 +61,7 @@ RSpec.describe 'Api::V1::Diagnostics', type: :request do
   describe 'GET /api/v1/diagnostics/health' do
     context 'when the application is healthy' do
       before do
-        allow(Services::DiagnosticsService).to receive(:health_probe).and_return(
+        allow(Diagnostics::Probe).to receive(:health_probe).and_return(
           {
             status: :ok,
             message: 'Application is healthy.',
@@ -78,13 +78,13 @@ RSpec.describe 'Api::V1::Diagnostics', type: :request do
       it 'returns a successful health response' do
         expect(json['success']).to be true
         expect(json['message']).to eq('Application is healthy.')
-        expect(json.dig('data', 'details', 'sidekiq')).to eq('running')
+        expect(json.dig('data', 'sidekiq')).to eq('running')
       end
     end
 
     context 'when the application is unhealthy' do
       before do
-        allow(Services::DiagnosticsService).to receive(:health_probe).and_return(
+        allow(Diagnostics::Probe).to receive(:health_probe).and_return(
           {
             status: :service_unavailable,
             message: 'Application is unhealthy.',
@@ -112,7 +112,7 @@ RSpec.describe 'Api::V1::Diagnostics', type: :request do
     let(:sample_metrics) { "# TYPE http_requests_total counter\nhttp_requests_total 5.0" }
 
     before do
-      allow(Services::Instrumentor).to receive(:registry).and_return(prometheus_registry)
+      allow(Diagnostics::Instrumentor).to receive(:registry).and_return(prometheus_registry)
       allow(Prometheus::Client::Formats::Text).to receive(:marshal).with(prometheus_registry).and_return(sample_metrics)
 
       get '/api/v1/diagnostics/metrics'

@@ -13,8 +13,8 @@ module Api
       def create = respond_with(Refunds::Creation.call(**create_args))
       def update = respond_with(Refunds::Update.call(@refund, update_refund_params))
       def destroy = respond_with_destroy(Refunds::Deletion.call(@refund))
-      def cancel = respond_with(refund_management_service.cancel, :cancel)
-      def complete = respond_with(refund_management_service.complete, :complete)
+      def cancel = respond_with(refund_management_service.cancel)
+      def complete = respond_with(refund_management_service.complete)
 
       private
 

@@ -2,7 +2,10 @@
 
 module Api
   class ApplicationController < ActionController::API
+    include ActionView::Layouts
     include Api::Responding
+
+    layout 'api'
 
     around_action :measure_execution_time
     around_action :handle_exceptions
@@ -60,7 +63,7 @@ module Api
       @user = User.find_by(mail: params[:mail])
       return if @user
 
-      render json: { errors: ['User with this email not found.'] }, status: :not_found
+      render_failure(message: 'User with this email not found.', status: :not_found)
     end
 
     protected
@@ -78,20 +81,19 @@ module Api
     end
 
     def render_unauthenticated(result)
-      render json: { errors: result.errors, message: result.message }, status: result.status
+      render_failure(message: result.message, errors: result.errors, status: result.status)
       false
     end
 
     def render_user_not_found
-      render json: { errors: ['Authentication failed: User not found.'], message: 'User not found.' },
-             status: :unauthorized
+      render_failure(message: 'User not found.', errors: ['Authentication failed: User not found.'],
+                     status: :unauthorized)
       false
     end
 
     def render_inactive_account
-      render json: { errors: ['User account is not active or verified.'],
-                     message: 'Account not active or verified.' },
-             status: :forbidden
+      render_failure(message: 'Account not active or verified.',
+                     errors: ['User account is not active or verified.'], status: :forbidden)
       false
     end
 
@@ -105,22 +107,22 @@ module Api
     def handle_exceptions
       yield
     rescue CanCan::AccessDenied
-      render json: { errors: ['Not Authorized'], message: 'Access denied' }, status: :forbidden
+      render_failure(message: 'Access denied', errors: ['Not Authorized'], status: :forbidden)
     rescue Api::ApplicationController::Forbidden
-      render json: { errors: ['Not Authorized'], message: 'Access denied.' }, status: :forbidden
+      render_failure(message: 'Access denied.', errors: ['Not Authorized'], status: :forbidden)
     rescue Stripe::SignatureVerificationError => e
-      render json: { errors: [e.message], message: 'Stripe signature verification failed.' }, status: :bad_request
+      render_failure(message: 'Stripe signature verification failed.', errors: [e.message], status: :bad_request)
     rescue ActiveRecord::RecordNotFound => e
-      render json: { errors: [e.message], message: 'Resource not found.' }, status: :not_found
+      render_failure(message: 'Resource not found.', errors: [e.message], status: :not_found)
     rescue ActiveRecord::RecordInvalid => e
-      render json: { errors: e.record.errors.full_messages, message: 'Validation failed.' },
-             status: :unprocessable_content
+      render_failure(message: 'Validation failed.', errors: e.record.errors.full_messages,
+                     status: :unprocessable_content)
     rescue ArgumentError => e
-      render json: { errors: [e.message], message: 'Bad request parameters.' }, status: :bad_request
+      render_failure(message: 'Bad request parameters.', errors: [e.message], status: :bad_request)
     rescue StandardError => e
       Rails.logger.error e.message.to_s
-      render json: { errors: ['An unexpected error occurred.'], message: 'Internal server error.' },
-             status: :internal_server_error
+      render_failure(message: 'Internal server error.', errors: ['An unexpected error occurred.'],
+                     status: :internal_server_error)
     end
   end
 end

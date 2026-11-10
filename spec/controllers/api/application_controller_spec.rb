@@ -54,16 +54,16 @@ RSpec.describe Api::ApplicationController, type: :controller do
   end
 
   let!(:user) { create(:user, active: true, verified: true) }
-  let(:bearer_service) { class_double(Services::BearerService) }
+  let(:bearer_service) { class_double(Auth::Bearer) }
 
   before do
-    stub_const('Services::BearerService', bearer_service)
+    stub_const('Auth::Bearer', bearer_service)
   end
 
   describe 'Authentication' do
     context 'with a valid token' do
       it 'allows access to the action' do
-        token_result = Services::Result.new(success?: true, data: { payload: { user_id: user.id } })
+        token_result = ApplicationService::Result.new(success?: true, data: { payload: { user_id: user.id } })
         allow(bearer_service).to receive(:decode).and_return(token_result)
         request.headers['Authorization'] = 'Bearer valid_token'
         get :index
@@ -73,7 +73,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
 
     context 'with no token' do
       it 'returns an unauthorized status' do
-        token_result = Services::Result.new(success?: false, errors: ['Token missing'], status: :unauthorized)
+        token_result = ApplicationService::Result.new(success?: false, errors: ['Token missing'], status: :unauthorized)
         allow(bearer_service).to receive(:decode).and_return(token_result)
         get :index
         expect(response).to have_http_status(:unauthorized)
@@ -82,7 +82,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
 
     context 'with an invalid token' do
       it 'returns an unauthorized status' do
-        token_result = Services::Result.new(success?: false, errors: ['Invalid token'], status: :unauthorized)
+        token_result = ApplicationService::Result.new(success?: false, errors: ['Invalid token'], status: :unauthorized)
         allow(bearer_service).to receive(:decode).and_return(token_result)
         request.headers['Authorization'] = 'Bearer invalid_token'
         get :index
@@ -92,7 +92,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
 
     context 'with a valid token for a non-existent user' do
       it 'returns an unauthorized status' do
-        token_result = Services::Result.new(success?: true, data: { payload: { user_id: -1 } })
+        token_result = ApplicationService::Result.new(success?: true, data: { payload: { user_id: -1 } })
         allow(bearer_service).to receive(:decode).and_return(token_result)
         request.headers['Authorization'] = 'Bearer valid_token'
         get :index
@@ -103,7 +103,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
     context 'with a user that is not active' do
       before { user.update!(active: false) }
       it 'returns a forbidden status' do
-        token_result = Services::Result.new(success?: true, data: { payload: { user_id: user.id } })
+        token_result = ApplicationService::Result.new(success?: true, data: { payload: { user_id: user.id } })
         allow(bearer_service).to receive(:decode).and_return(token_result)
         request.headers['Authorization'] = 'Bearer valid_token'
         get :index
@@ -116,7 +116,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
     context 'when an admin accesses a restricted action' do
       let!(:admin) { create(:user, :admin, active: true, verified: true) }
       it 'allows access' do
-        token_result = Services::Result.new(success?: true, data: { payload: { user_id: admin.id } })
+        token_result = ApplicationService::Result.new(success?: true, data: { payload: { user_id: admin.id } })
         allow(bearer_service).to receive(:decode).and_return(token_result)
         request.headers['Authorization'] = 'Bearer admin_token'
         get :restricted_action
@@ -126,7 +126,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
 
     context 'when a regular user accesses a restricted action' do
       it 'returns a forbidden status' do
-        token_result = Services::Result.new(success?: true, data: { payload: { user_id: user.id } })
+        token_result = ApplicationService::Result.new(success?: true, data: { payload: { user_id: user.id } })
         allow(bearer_service).to receive(:decode).and_return(token_result)
         request.headers['Authorization'] = 'Bearer user_token'
         get :restricted_action
@@ -137,7 +137,7 @@ RSpec.describe Api::ApplicationController, type: :controller do
 
   describe 'Exception Handling' do
     before do
-      token_result = Services::Result.new(success?: true, data: { payload: { user_id: user.id } })
+      token_result = ApplicationService::Result.new(success?: true, data: { payload: { user_id: user.id } })
       allow(bearer_service).to receive(:decode).and_return(token_result)
       request.headers['Authorization'] = 'Bearer valid_token'
     end

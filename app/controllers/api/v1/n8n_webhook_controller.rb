@@ -6,7 +6,7 @@ module Api
       skip_before_action :authenticate_user!
       before_action :verify_webhook_secret
 
-      def handle = respond_with(Webhooks::N8nHandler.call(webhook_params), :handle)
+      def handle = respond_with(Webhooks::N8nHandler.call(webhook_params), :order)
 
       private
 
@@ -18,7 +18,7 @@ module Api
         expected = ENV.fetch('N8N_WEBHOOK_SECRET', nil)
         return if expected.present? && ActiveSupport::SecurityUtils.secure_compare(provided_secret, expected)
 
-        render json: { errors: ['Invalid webhook signature.'] }, status: :unauthorized
+        render_failure(message: 'Invalid webhook signature.', status: :unauthorized)
       end
 
       def provided_secret = request.headers['X-N8N-Signature'].to_s

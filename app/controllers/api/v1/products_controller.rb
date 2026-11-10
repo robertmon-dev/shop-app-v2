@@ -17,7 +17,7 @@ module Api
       def like = respond_with(product_interaction_service.like(@product))
       def rate = respond_with(product_interaction_service.rate(@product, *rate_args))
       def comment = respond_with(product_interaction_service.add_comment(@product, *comment_args))
-      def create_photo = respond_with(Products::PhotoCreation.call(**photo_args), :create_photo)
+      def create_photo = respond_with(Products::PhotoCreation.call(**photo_args), :photo)
 
       def available_categories = respond_with_view(:categories, categories: Category.order(:name))
       def create_category = respond_with(category_service.create(category_params), :category)

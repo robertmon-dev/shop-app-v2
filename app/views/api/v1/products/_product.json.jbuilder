@@ -31,6 +31,6 @@ json.cache! [
   end
 
   json.categories product.categories do |category|
-    json.partial! 'api/v1/products/product_category', product_category: category
+    json.partial! 'api/v1/products/product_category', category: category
   end
 end

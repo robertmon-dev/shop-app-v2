@@ -6,10 +6,10 @@ RSpec.describe Api::V1::DiagnosticsController, type: :controller do
   render_views
 
   before do
-    allow(Services::DiagnosticsService).to receive(:readiness_probe).and_return(
+    allow(Diagnostics::Probe).to receive(:readiness_probe).and_return(
       status: :ok, message: 'Application is ready', errors: [], details: {}
     )
-    allow(Services::DiagnosticsService).to receive(:health_probe).and_return(
+    allow(Diagnostics::Probe).to receive(:health_probe).and_return(
       status: :ok, message: 'Application is healthy', errors: [], details: { database: true, redis: true }
     )
   end
@@ -28,7 +28,7 @@ RSpec.describe Api::V1::DiagnosticsController, type: :controller do
 
     context 'when the readiness check fails' do
       before do
-        allow(Services::DiagnosticsService).to receive(:readiness_probe).and_return(
+        allow(Diagnostics::Probe).to receive(:readiness_probe).and_return(
           status: :service_unavailable, message: 'Application not ready', errors: ['Readiness check failed: DB error'], details: {}
         )
       end
@@ -53,14 +53,14 @@ RSpec.describe Api::V1::DiagnosticsController, type: :controller do
 
         expect(json_response['success']).to be true
         expect(json_response['message']).to eq('Application is healthy')
-        expect(json_response['data']['details']['database']).to be true
-        expect(json_response['data']['details']['redis']).to be true
+        expect(json_response['data']['database']).to be true
+        expect(json_response['data']['redis']).to be true
       end
     end
 
     context 'when a component is unhealthy' do
       before do
-        allow(Services::DiagnosticsService).to receive(:health_probe).and_return(
+        allow(Diagnostics::Probe).to receive(:health_probe).and_return(
           status: :service_unavailable,
           message: 'Application unhealthy',
           errors: ['Redis check failed: Connection refused'],
@@ -75,7 +75,7 @@ RSpec.describe Api::V1::DiagnosticsController, type: :controller do
 
         expect(json_response['success']).to be false
         expect(json_response['errors']).to include('Redis check failed: Connection refused')
-        expect(json_response['data']['details']['redis']).to be false
+        expect(json_response['data']['redis']).to be false
       end
     end
   end
@@ -84,7 +84,7 @@ RSpec.describe Api::V1::DiagnosticsController, type: :controller do
     it 'returns metrics in Prometheus text format' do
       prometheus_text_format = class_double('Prometheus::Client::Formats::Text').as_stubbed_const
 
-      allow(Services::Instrumentor).to receive(:registry).and_return(double('registry'))
+      allow(Diagnostics::Instrumentor).to receive(:registry).and_return(double('registry'))
       allow(prometheus_text_format).to receive(:marshal).and_return('fake metrics')
 
       get :metrics
