@@ -3,9 +3,9 @@
 namespace :rabbitmq do
   desc 'Consume order events from RabbitMQ'
   task consume: :environment do
-    Rails.logger.info "Starting consumer on #{Services::ConsumerManager::QUEUE_NAME}"
-    Services::ConsumerManager.start
+    Rails.logger.info "Starting consumer on #{Messaging::ConsumerManager::QUEUE_NAME}"
+    Messaging::ConsumerManager.start
   rescue Interrupt
-    Services::ConsumerManager.stop
+    Messaging::ConsumerManager.stop
   end
 end
