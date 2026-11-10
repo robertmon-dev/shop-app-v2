@@ -1,10 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  class BearerService
-    extend Concerns::ResultHelpers
-    extend Concerns::Handlers
-
+module Auth
+  class Bearer < ApplicationService
     SECRET_KEY = Rails.application.credentials.secret_key_base
     TOKEN_LIFETIME = ENV.fetch('TOKEN_LIFETIME_HOURS', 24).to_i.hours.to_i
     KEY_PREFIX = 'jwt_status:'
