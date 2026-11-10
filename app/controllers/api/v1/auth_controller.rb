@@ -13,14 +13,14 @@ module Api
         request_2fa_code_resend request_activation_code_resend request_verification_code_resend
       ]
 
-      def login = render_auth(Services::AuthenticationService.login(params[:mail], params[:password]), :login)
-      def verify_2fa = render_auth(Services::AuthenticationService.verify_2fa(@user, code(:second_factor)), :verify_2fa)
-      def activate = render_auth(Services::UserManagementService.activate(@user, code(:activation)), :activate)
-      def verify = render_auth(Services::UserManagementService.verify(@user, code(:verification)), :verify)
-      def request_reset = render_auth(Services::PasswordResetService.request(params[:mail]), :request_reset)
-      def confirm_reset = render_auth(Services::PasswordResetService.reset(*reset_args), :confirm_reset)
-      def blacklist_user = render_auth(Services::UserManagementService.blacklist_user(id: user_id), 'shared/message')
-      def whitelist_user = render_auth(Services::UserManagementService.whitelist_user(id: user_id), 'shared/message')
+      def login = render_auth(Auth::Authentication.login(params[:mail], params[:password]), :login)
+      def verify_2fa = render_auth(Auth::Authentication.verify_2fa(@user, code(:second_factor)), :verify_2fa)
+      def activate = render_auth(Users::Management.activate(@user, code(:activation)), :activate)
+      def verify = render_auth(Users::Management.verify(@user, code(:verification)), :verify)
+      def request_reset = render_auth(Auth::PasswordReset.request(params[:mail]), :request_reset)
+      def confirm_reset = render_auth(Auth::PasswordReset.reset(*reset_args), :confirm_reset)
+      def blacklist_user = render_auth(Users::Management.blacklist_user(id: user_id), 'shared/message')
+      def whitelist_user = render_auth(Users::Management.whitelist_user(id: user_id), 'shared/message')
 
       private
 
