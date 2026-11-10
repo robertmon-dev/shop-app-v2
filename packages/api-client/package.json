@@ -1,0 +1,26 @@
+{
+  "name": "@shop/api-client",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Typed TanStack Query client for the Rails API",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@shop/api-types": "*",
+    "openapi-fetch": "^0.13.0",
+    "openapi-react-query": "^0.3.0"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "^5.62.0",
+    "@types/react": "^18.3.0",
+    "react": "^18.3.0",
+    "typescript": "^5.6.0"
+  }
+}

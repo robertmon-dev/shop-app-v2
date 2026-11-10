@@ -1,0 +1,37 @@
+import type { paths } from '@shop/api-types';
+import createFetchClient, { type Middleware } from 'openapi-fetch';
+import createQueryClient from 'openapi-react-query';
+
+import { ApiError } from './errors';
+
+export interface ApiClientOptions {
+  baseUrl: string;
+  getToken?: () => string | null | undefined;
+}
+
+const authentication = (getToken: NonNullable<ApiClientOptions['getToken']>): Middleware => ({
+  onRequest({ request }) {
+    const token = getToken();
+    if (token) request.headers.set('Authorization', `Bearer ${token}`);
+    return request;
+  },
+});
+
+const failures: Middleware = {
+  async onResponse({ response }) {
+    if (response.ok) return response;
+
+    const body = await response.clone().json().catch(() => undefined);
+    throw new ApiError(response.status, body);
+  },
+};
+
+export const createApiClient = ({ baseUrl, getToken }: ApiClientOptions) => {
+  const fetchClient = createFetchClient<paths>({ baseUrl });
+  if (getToken) fetchClient.use(authentication(getToken));
+  fetchClient.use(failures);
+
+  return { fetchClient, $api: createQueryClient(fetchClient) };
+};
+
+export type ApiClient = ReturnType<typeof createApiClient>;
