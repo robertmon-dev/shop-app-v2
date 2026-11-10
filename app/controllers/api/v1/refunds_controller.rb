@@ -10,9 +10,9 @@ module Api
       def index = respond_with_view(:index, refunds: accessible_refunds)
       def me = respond_with_view(:index, refunds: own_refunds)
       def show = respond_with_view(:show)
-      def create = respond_with(Services::RefundCreationService.call(**create_args))
-      def update = respond_with(Services::RefundUpdateService.call(@refund, update_refund_params))
-      def destroy = respond_with_destroy(Services::RefundDeletionService.call(@refund))
+      def create = respond_with(Refunds::Creation.call(**create_args))
+      def update = respond_with(Refunds::Update.call(@refund, update_refund_params))
+      def destroy = respond_with_destroy(Refunds::Deletion.call(@refund))
       def cancel = respond_with(refund_management_service.cancel, :cancel)
       def complete = respond_with(refund_management_service.complete, :complete)
 
@@ -29,7 +29,7 @@ module Api
       end
 
       def refund_management_service
-        @refund_management_service ||= Services::RefundManagementService.new(@refund)
+        @refund_management_service ||= Refunds::Management.new(@refund)
       end
 
       def update_refund_params = params.require(:refund).permit(:status, :reason, :description)
