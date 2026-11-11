@@ -1,0 +1,11 @@
+{
+  "name": "@shop/api",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "bin/rails server",
+    "test": "bundle exec rspec",
+    "lint": "bundle exec rubocop",
+    "lint:fix": "bundle exec rubocop -A"
+  }
+}

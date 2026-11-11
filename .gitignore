@@ -1,0 +1,23 @@
+# Dependencies and build output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+.turbo/
+*.tsbuildinfo
+
+# Yarn
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+yarn-error.log
+
+# Editors and OS
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# The Rails app keeps its own ignore rules in apps/api/.gitignore.
