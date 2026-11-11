@@ -1,29 +1,30 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
-import {
-  createApiClient,
-  type ApiClient,
-  type ApiClientOptions,
-} from "./client";
+import { createApiClient, type ApiClient } from "./client";
+import { SessionProvider, useSession, type SessionStorage } from "./session";
 
 const ApiContext = createContext<ApiClient | null>(null);
 
-interface ApiProviderProps extends ApiClientOptions {
+interface ApiProviderProps {
+  baseUrl: string;
+  validate?: boolean;
+  storage?: SessionStorage;
   queryClient?: QueryClient;
   children: ReactNode;
 }
 
-export const ApiProvider = ({
+const ClientProvider = ({
   baseUrl,
-  getToken,
   validate,
   queryClient,
   children,
-}: ApiProviderProps) => {
+}: Omit<ApiProviderProps, "storage">) => {
+  const { getToken, clear } = useSession();
   const client = useMemo(
-    () => createApiClient({ baseUrl, getToken, validate }),
-    [baseUrl, getToken, validate],
+    () =>
+      createApiClient({ baseUrl, validate, getToken, onUnauthorized: clear }),
+    [baseUrl, validate, getToken, clear],
   );
   const queries = useMemo(
     () => queryClient ?? new QueryClient(),
@@ -36,6 +37,12 @@ export const ApiProvider = ({
     </ApiContext.Provider>
   );
 };
+
+export const ApiProvider = ({ storage, ...props }: ApiProviderProps) => (
+  <SessionProvider storage={storage}>
+    <ClientProvider {...props} />
+  </SessionProvider>
+);
 
 export const useApi = (): ApiClient => {
   const client = useContext(ApiContext);
