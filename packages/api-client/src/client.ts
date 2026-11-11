@@ -1,18 +1,22 @@
-import type { paths } from '@shop/api-types';
-import createFetchClient, { type Middleware } from 'openapi-fetch';
-import createQueryClient from 'openapi-react-query';
+import type { paths } from "@shop/api-types";
+import createFetchClient, { type Middleware } from "openapi-fetch";
+import createQueryClient from "openapi-react-query";
 
-import { ApiError } from './errors';
+import { ApiError } from "./errors";
+import { requestValidation, responseValidation } from "./validation";
 
 export interface ApiClientOptions {
   baseUrl: string;
   getToken?: () => string | null | undefined;
+  validate?: boolean;
 }
 
-const authentication = (getToken: NonNullable<ApiClientOptions['getToken']>): Middleware => ({
+const authentication = (
+  getToken: NonNullable<ApiClientOptions["getToken"]>,
+): Middleware => ({
   onRequest({ request }) {
     const token = getToken();
-    if (token) request.headers.set('Authorization', `Bearer ${token}`);
+    if (token) request.headers.set("Authorization", `Bearer ${token}`);
     return request;
   },
 });
@@ -21,14 +25,22 @@ const failures: Middleware = {
   async onResponse({ response }) {
     if (response.ok) return response;
 
-    const body = await response.clone().json().catch(() => undefined);
+    const body = await response
+      .clone()
+      .json()
+      .catch(() => undefined);
     throw new ApiError(response.status, body);
   },
 };
 
-export const createApiClient = ({ baseUrl, getToken }: ApiClientOptions) => {
+export const createApiClient = ({
+  baseUrl,
+  getToken,
+  validate = true,
+}: ApiClientOptions) => {
   const fetchClient = createFetchClient<paths>({ baseUrl });
   if (getToken) fetchClient.use(authentication(getToken));
+  if (validate) fetchClient.use(requestValidation, responseValidation);
   fetchClient.use(failures);
 
   return { fetchClient, $api: createQueryClient(fetchClient) };

@@ -11,7 +11,8 @@
   "dependencies": {
     "@shop/api-types": "*",
     "openapi-fetch": "^0.13.0",
-    "openapi-react-query": "^0.3.0"
+    "openapi-react-query": "^0.3.0",
+    "zod": "^4"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",
