@@ -1,5 +1,5 @@
 import { useApi } from "../provider";
-import { useSession } from "../session";
+import { useSessionStore } from "../session";
 
 const tokenOf = (body: unknown): string | undefined => {
   const data = (body as { data?: { token?: unknown } } | undefined)?.data;
@@ -7,7 +7,7 @@ const tokenOf = (body: unknown): string | undefined => {
 };
 
 export const useLogin = () => {
-  const { setToken } = useSession();
+  const { setToken } = useSessionStore();
   return useApi().$api.useMutation("post", "/api/v1/auth/login", {
     onSuccess: (body) => {
       const token = tokenOf(body);
@@ -17,7 +17,7 @@ export const useLogin = () => {
 };
 
 export const useVerifyTwoFactor = () => {
-  const { setToken } = useSession();
+  const { setToken } = useSessionStore();
   return useApi().$api.useMutation("post", "/api/v1/auth/verify_2fa", {
     onSuccess: (body) => {
       const token = tokenOf(body);

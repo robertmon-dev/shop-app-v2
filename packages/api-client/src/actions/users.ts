@@ -1,11 +1,19 @@
 import { useInvalidate } from "../invalidate";
 import { useApi } from "../provider";
+import { useSession, useSignOut } from "../session";
 
 const USERS = "/api/v1/users";
 
 export const useUsers = () => useApi().$api.useQuery("get", "/api/v1/users");
-export const useCurrentUser = () =>
-  useApi().$api.useQuery("get", "/api/v1/users/me");
+export const useCurrentUser = () => {
+  const { isAuthenticated } = useSession();
+  return useApi().$api.useQuery(
+    "get",
+    "/api/v1/users/me",
+    {},
+    { enabled: isAuthenticated },
+  );
+};
 
 export const useUser = (id: number) =>
   useApi().$api.useQuery("get", "/api/v1/users/{id}", {
@@ -19,8 +27,12 @@ export const useUserActions = (id: number, page?: number) =>
 
 export const useRegister = () =>
   useApi().$api.useMutation("post", "/api/v1/users");
-export const useLogout = () =>
-  useApi().$api.useMutation("post", "/api/v1/users/logout");
+export const useLogout = () => {
+  const signOut = useSignOut();
+  return useApi().$api.useMutation("post", "/api/v1/users/logout", {
+    onSettled: signOut,
+  });
+};
 
 export const useUpdateUser = () => {
   const invalidate = useInvalidate(USERS);
