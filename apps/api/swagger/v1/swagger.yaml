@@ -18,11 +18,21 @@ paths:
               schema:
                 type: object
                 properties:
-                  token:
-                    type: string
-                    description: JWT for subsequent requests
+                  success:
+                    type: boolean
                   message:
                     type: string
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        description: JWT for subsequent requests
+                    required:
+                      - token
+                required:
+                  - success
+                  - data
         "202":
           description: 2FA verification required
           content:
@@ -34,8 +44,19 @@ paths:
                     type: boolean
                   message:
                     type: string
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: integer
+                      two_factor_required:
+                        type: boolean
+                    required:
+                      - user_id
+                      - two_factor_required
                 required:
                   - success
+                  - data
         "401":
           description: invalid credentials
           content:
@@ -88,8 +109,23 @@ paths:
               schema:
                 type: object
                 properties:
-                  token:
+                  success:
+                    type: boolean
+                  message:
                     type: string
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                      user:
+                        "$ref": "#/components/schemas/User"
+                    required:
+                      - token
+                      - user
+                required:
+                  - success
+                  - data
         "401":
           description: invalid 2FA code
           content:
@@ -146,8 +182,16 @@ paths:
                     type: boolean
                   message:
                     type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        "$ref": "#/components/schemas/User"
+                    required:
+                      - user
                 required:
                   - success
+                  - data
         "422":
           description: invalid activation code
           content:
@@ -814,16 +858,10 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
                   message:
                     type: string
-                    example: Application is ready.
-                  details:
-                    type: object
-                    properties:
-                      database:
-                        type: string
-                        example: ok
+                required:
+                  - success
         "503":
           description: application is not ready
           content:
@@ -833,20 +871,20 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: false
+                    enum:
+                      - false
                   message:
                     type: string
-                    example: Application is not ready.
                   errors:
                     type: array
                     items:
                       type: string
-                  details:
+                  data:
                     type: object
-                    properties:
-                      database:
-                        type: string
-                        example: error
+                required:
+                  - success
+                  - message
+                  - errors
   "/api/v1/diagnostics/health":
     get:
       summary: Checks the ongoing health of the application
@@ -862,19 +900,21 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    example: true
                   message:
                     type: string
-                    example: Application is healthy.
-                  details:
+                  data:
                     type: object
                     properties:
                       database:
-                        type: string
-                        example: ok
+                        type: boolean
                       redis:
-                        type: string
-                        example: ok
+                        type: boolean
+                    required:
+                      - database
+                      - redis
+                required:
+                  - success
+                  - data
   "/api/v1/diagnostics/metrics":
     get:
       summary: Exposes application metrics in Prometheus format
@@ -2951,6 +2991,25 @@ paths:
       responses:
         "200":
           description: profile updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        "$ref": "#/components/schemas/UserProfile"
+                    required:
+                      - user
+                required:
+                  - success
+                  - data
       requestBody:
         content:
           application/json:
@@ -3022,6 +3081,25 @@ paths:
       responses:
         "200":
           description: role updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        "$ref": "#/components/schemas/UserProfile"
+                    required:
+                      - user
+                required:
+                  - success
+                  - data
         "403":
           description: forbidden
       requestBody:
@@ -3049,6 +3127,25 @@ paths:
       responses:
         "200":
           description: details updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        "$ref": "#/components/schemas/UserProfile"
+                    required:
+                      - user
+                required:
+                  - success
+                  - data
       requestBody:
         content:
           application/json:
