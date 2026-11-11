@@ -3,6 +3,8 @@ import createClient, { type ClientOptions } from "openapi-fetch";
 import type { components, paths } from "./schema";
 
 export type { components, paths };
+export * from "./zod/zod.gen";
+export { operationSchemas } from "./registry.gen";
 
 type HttpMethod = "get" | "post" | "put" | "patch" | "delete";
 
