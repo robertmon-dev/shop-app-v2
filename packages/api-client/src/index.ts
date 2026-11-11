@@ -10,4 +10,12 @@ export { ApiError, ApiValidationError } from "./errors";
 export * from "./actions";
 export { useInvalidate } from "./invalidate";
 export { ApiProvider, useApi } from "./provider";
+export {
+  memoryStorage,
+  SessionProvider,
+  useSession,
+  webStorage,
+  type Session,
+  type SessionStorage,
+} from "./session";
 export { createApiClient } from "./client";
