@@ -282,7 +282,7 @@ types: swagger ## Regenerate packages/api-types from the integration specs
 
 .PHONY: types-check
 types-check: types ## Fail when the committed swagger.yaml or generated types are stale
-	@git diff --exit-code -- $(API_DIR)/swagger packages/api-types/src/schema.d.ts \
+	@git diff --exit-code -- $(API_DIR)/swagger packages/api-types/src/schema.d.ts packages/api-types/src/zod packages/api-types/src/registry.gen.ts \
 		|| (echo "$(YELLOW)=> API types are out of date. Run 'make types' and commit the result.$(RESET)"; exit 1)
 
 # ==============================================================================
