@@ -23,10 +23,7 @@ describe 'Authentication API' do
         response '200', 'login successful' do
           let(:credentials) { { mail: user.mail, password: 'password' } }
 
-          schema type: :object, properties: {
-            token: { type: :string, description: 'JWT for subsequent requests' },
-            message: { type: :string }
-          }
+          schema envelope_schema(token: { type: :string, description: 'JWT for subsequent requests' })
 
           after do |example|
             example.metadata[:response][:content] =
@@ -44,7 +41,7 @@ describe 'Authentication API' do
           let(:user_with_2fa) { create(:user, :two_factor_enabled, password: 'password') }
           let(:credentials) { { mail: user_with_2fa.mail, password: 'password' } }
 
-          schema message_schema
+          schema envelope_schema(user_id: { type: :integer }, two_factor_required: { type: :boolean })
 
           after do |example|
             example.metadata[:response][:content] =
@@ -91,7 +88,7 @@ describe 'Authentication API' do
         response '200', '2FA successful, token returned' do
           let(:verification) { { mail: user_with_2fa.mail, second_factor_code: sfc.code } }
 
-          schema type: :object, properties: { token: { type: :string } }
+          schema envelope_schema(token: { type: :string }, user: ref(:User))
 
           after do |example|
             example.metadata[:response][:content] =
@@ -138,7 +135,7 @@ describe 'Authentication API' do
         response '200', 'account activated successfully' do
           let(:activation) { { mail: inactive_user.mail, activation_code: activation_code.code } }
 
-          schema message_schema
+          schema envelope_schema(user: ref(:User))
 
           after do |example|
             example.metadata[:response][:content] =

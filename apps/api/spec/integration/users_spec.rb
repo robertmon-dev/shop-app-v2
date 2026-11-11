@@ -23,7 +23,7 @@ describe 'Users API' do
     get 'Lists all users (Admin only)' do
       tags 'Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [{ Bearer: [] }]
 
       context 'as an admin' do
         let(:Authorization) { "Bearer #{admin_user_token}" }
@@ -86,7 +86,7 @@ describe 'Users API' do
     get 'Retrieves the current user profile' do
       tags 'Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [{ Bearer: [] }]
       let(:Authorization) { "Bearer #{regular_user_token}" }
 
       response '200', 'returns current user profile' do
@@ -100,7 +100,7 @@ describe 'Users API' do
     post 'Logs out the current user' do
       tags 'Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [{ Bearer: [] }]
       let(:Authorization) { "Bearer #{regular_user_token}" }
 
       response '200', 'logout successful' do
@@ -117,7 +117,7 @@ describe 'Users API' do
     get 'Retrieves a user profile' do
       tags 'Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [{ Bearer: [] }]
 
       context 'as self' do
         let(:Authorization) { "Bearer #{regular_user_token}" }
@@ -147,7 +147,8 @@ describe 'Users API' do
     put 'Updates a user profile' do
       tags 'Users'
       consumes 'application/json'
-      security [Bearer: []]
+      produces 'application/json'
+      security [{ Bearer: [] }]
       parameter name: :user_params, in: :body, schema: {
         # Taki sam schemat jak dla `create`, ale pola nie są wymagane
       }
@@ -164,7 +165,7 @@ describe 'Users API' do
 
     delete 'Deletes a user account' do
       tags 'Users'
-      security [Bearer: []]
+      security [{ Bearer: [] }]
 
       context 'as self' do
         let(:Authorization) { "Bearer #{regular_user_token}" }
@@ -187,7 +188,8 @@ describe 'Users API' do
     patch 'Updates a user role (Admin only)' do
       tags 'Users'
       consumes 'application/json'
-      security [Bearer: []]
+      produces 'application/json'
+      security [{ Bearer: [] }]
       parameter name: :id, in: :path, type: :integer, required: true
       parameter name: :role_params, in: :body, schema: {
         type: :object, properties: { role: { type: :string, example: 'moderator' } }
@@ -217,7 +219,8 @@ describe 'Users API' do
     patch 'Updates user details' do
       tags 'Users'
       consumes 'application/json'
-      security [Bearer: []]
+      produces 'application/json'
+      security [{ Bearer: [] }]
       parameter name: :id, in: :path, type: :integer, required: true
       parameter name: :detail_params, in: :body, schema: {
         type: :object, properties: {
@@ -250,7 +253,7 @@ describe 'Users API' do
       tags 'Users'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [{ Bearer: [] }]
       parameter name: :body, in: :body, schema: {
         type: :object, properties: { user: { type: :object,
                                              properties: { phone: { type: :string } } } }, required: ['user']
@@ -272,7 +275,7 @@ describe 'Users API' do
     get 'Lists the actions performed by a user' do
       tags 'Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [{ Bearer: [] }]
       parameter name: :page, in: :query, type: :integer, required: false
       let(:Authorization) { "Bearer #{regular_user_token}" }
       let(:page) { 1 }
@@ -292,7 +295,7 @@ describe 'Users API' do
       tags 'Users'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [{ Bearer: [] }]
       parameter name: :body, in: :body, schema: {
         type: :object,
         properties: { location: { type: :object, properties: { country: { type: :string }, city: { type: :string },
@@ -319,7 +322,7 @@ describe 'Users API' do
       tags 'Users'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [{ Bearer: [] }]
       parameter name: :body, in: :body, schema: {
         type: :object,
         properties: { entrepreneur_detail: { type: :object, properties: { business_name: { type: :string },

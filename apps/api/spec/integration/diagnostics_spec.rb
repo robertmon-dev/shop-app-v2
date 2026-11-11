@@ -11,11 +11,7 @@ describe 'Diagnostics API' do
 
       context 'when application is ready' do
         response '200', 'application is ready' do
-          schema type: :object, properties: {
-            success: { type: :boolean, example: true },
-            message: { type: :string, example: 'Application is ready.' },
-            details: { type: :object, properties: { database: { type: :string, example: 'ok' } } }
-          }
+          schema message_schema
 
           before do
             allow(Diagnostics::Probe).to receive(:readiness_probe).and_return(
@@ -33,12 +29,7 @@ describe 'Diagnostics API' do
 
       context 'when application is not ready' do
         response '503', 'application is not ready' do
-          schema type: :object, properties: {
-            success: { type: :boolean, example: false },
-            message: { type: :string, example: 'Application is not ready.' },
-            errors: { type: :array, items: { type: :string } },
-            details: { type: :object, properties: { database: { type: :string, example: 'error' } } }
-          }
+          schema failure_schema
 
           before do
             allow(Diagnostics::Probe).to receive(:readiness_probe).and_return(
@@ -64,17 +55,11 @@ describe 'Diagnostics API' do
 
       context 'when application is healthy' do
         response '200', 'application is healthy' do
-          schema type: :object, properties: {
-            success: { type: :boolean, example: true },
-            message: { type: :string, example: 'Application is healthy.' },
-            details: { type: :object,
-                       properties: { database: { type: :string, example: 'ok' },
-                                     redis: { type: :string, example: 'ok' } } }
-          }
+          schema envelope_schema(database: { type: :boolean }, redis: { type: :boolean })
 
           before do
             allow(Diagnostics::Probe).to receive(:health_probe).and_return(
-              { status: :ok, message: 'Application is healthy.', details: { database: 'ok', redis: 'ok' } }
+              { status: :ok, message: 'Application is healthy.', details: { database: true, redis: true } }
             )
           end
 
