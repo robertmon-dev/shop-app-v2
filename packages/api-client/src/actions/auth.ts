@@ -1,9 +1,30 @@
 import { useApi } from "../provider";
+import { useSession } from "../session";
 
-export const useLogin = () =>
-  useApi().$api.useMutation("post", "/api/v1/auth/login");
-export const useVerifyTwoFactor = () =>
-  useApi().$api.useMutation("post", "/api/v1/auth/verify_2fa");
+const tokenOf = (body: unknown): string | undefined => {
+  const data = (body as { data?: { token?: unknown } } | undefined)?.data;
+  return typeof data?.token === "string" ? data.token : undefined;
+};
+
+export const useLogin = () => {
+  const { setToken } = useSession();
+  return useApi().$api.useMutation("post", "/api/v1/auth/login", {
+    onSuccess: (body) => {
+      const token = tokenOf(body);
+      if (token) setToken(token);
+    },
+  });
+};
+
+export const useVerifyTwoFactor = () => {
+  const { setToken } = useSession();
+  return useApi().$api.useMutation("post", "/api/v1/auth/verify_2fa", {
+    onSuccess: (body) => {
+      const token = tokenOf(body);
+      if (token) setToken(token);
+    },
+  });
+};
 export const useActivateAccount = () =>
   useApi().$api.useMutation("patch", "/api/v1/auth/activate");
 export const useVerifyAccount = () =>
