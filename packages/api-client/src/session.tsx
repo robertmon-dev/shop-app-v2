@@ -1,10 +1,10 @@
+import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   useCallback,
   useContext,
   useMemo,
-  useRef,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -14,12 +14,16 @@ export interface SessionStorage {
   remove: () => void;
 }
 
-export interface Session {
-  token: string | null;
-  isAuthenticated: boolean;
+export interface SessionStore {
+  getToken: () => string | null;
   setToken: (token: string) => void;
   clear: () => void;
-  getToken: () => string | null;
+  subscribe: (listener: () => void) => () => void;
+}
+
+export interface Session extends SessionStore {
+  token: string | null;
+  isAuthenticated: boolean;
 }
 
 export const memoryStorage = (): SessionStorage => {
@@ -44,7 +48,30 @@ export const webStorage = (
   remove: () => storage.removeItem(key),
 });
 
-const SessionContext = createContext<Session | null>(null);
+export const createSessionStore = (
+  storage: SessionStorage = memoryStorage(),
+): SessionStore => {
+  const listeners = new Set<() => void>();
+  const notify = () => listeners.forEach((listener) => listener());
+
+  return {
+    getToken: storage.get,
+    setToken: (token) => {
+      storage.set(token);
+      notify();
+    },
+    clear: () => {
+      storage.remove();
+      notify();
+    },
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+  };
+};
+
+const SessionContext = createContext<SessionStore | null>(null);
 
 interface SessionProviderProps {
   storage?: SessionStorage;
@@ -55,46 +82,35 @@ export const SessionProvider = ({
   storage,
   children,
 }: SessionProviderProps) => {
-  const store = useMemo(() => storage ?? memoryStorage(), [storage]);
-  const [token, setState] = useState(() => store.get());
-  const latest = useRef(token);
-
-  const setToken = useCallback(
-    (next: string) => {
-      latest.current = next;
-      store.set(next);
-      setState(next);
-    },
-    [store],
-  );
-
-  const clear = useCallback(() => {
-    latest.current = null;
-    store.remove();
-    setState(null);
-  }, [store]);
-
-  const getToken = useCallback(() => latest.current, []);
-
-  const value = useMemo(
-    () => ({
-      token,
-      isAuthenticated: token !== null,
-      setToken,
-      clear,
-      getToken,
-    }),
-    [token, setToken, clear, getToken],
-  );
-
+  const store = useMemo(() => createSessionStore(storage), [storage]);
   return (
-    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+    <SessionContext.Provider value={store}>{children}</SessionContext.Provider>
   );
 };
 
-export const useSession = (): Session => {
-  const session = useContext(SessionContext);
-  if (!session)
+export const useSessionStore = (): SessionStore => {
+  const store = useContext(SessionContext);
+  if (!store)
     throw new Error("useSession must be used inside <SessionProvider>");
-  return session;
+  return store;
+};
+
+export const useSession = (): Session => {
+  const store = useSessionStore();
+  const token = useSyncExternalStore(
+    store.subscribe,
+    store.getToken,
+    () => null,
+  );
+  return { ...store, token, isAuthenticated: token !== null };
+};
+
+export const useSignOut = () => {
+  const { clear } = useSessionStore();
+  const queryClient = useQueryClient();
+
+  return useCallback(() => {
+    clear();
+    queryClient.clear();
+  }, [clear, queryClient]);
 };

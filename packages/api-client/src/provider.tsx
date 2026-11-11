@@ -1,8 +1,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  type ReactNode,
+} from "react";
 
 import { createApiClient, type ApiClient } from "./client";
-import { SessionProvider, useSession, type SessionStorage } from "./session";
+import {
+  SessionProvider,
+  useSessionStore,
+  type SessionStorage,
+} from "./session";
 
 const ApiContext = createContext<ApiClient | null>(null);
 
@@ -20,7 +30,7 @@ const ClientProvider = ({
   queryClient,
   children,
 }: Omit<ApiProviderProps, "storage">) => {
-  const { getToken, clear } = useSession();
+  const { getToken, clear } = useSessionStore();
   const client = useMemo(
     () =>
       createApiClient({ baseUrl, validate, getToken, onUnauthorized: clear }),
