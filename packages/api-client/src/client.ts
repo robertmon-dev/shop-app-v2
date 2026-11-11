@@ -9,6 +9,7 @@ export interface ApiClientOptions {
   baseUrl: string;
   getToken?: () => string | null | undefined;
   validate?: boolean;
+  onUnauthorized?: () => void;
 }
 
 const authentication = (
@@ -21,9 +22,10 @@ const authentication = (
   },
 });
 
-const failures: Middleware = {
+const failures = (onUnauthorized?: () => void): Middleware => ({
   async onResponse({ response }) {
     if (response.ok) return response;
+    if (response.status === 401) onUnauthorized?.();
 
     const body = await response
       .clone()
@@ -31,17 +33,18 @@ const failures: Middleware = {
       .catch(() => undefined);
     throw new ApiError(response.status, body);
   },
-};
+});
 
 export const createApiClient = ({
   baseUrl,
   getToken,
   validate = true,
+  onUnauthorized,
 }: ApiClientOptions) => {
   const fetchClient = createFetchClient<paths>({ baseUrl });
   if (getToken) fetchClient.use(authentication(getToken));
   if (validate) fetchClient.use(requestValidation, responseValidation);
-  fetchClient.use(failures);
+  fetchClient.use(failures(onUnauthorized));
 
   return { fetchClient, $api: createQueryClient(fetchClient) };
 };
