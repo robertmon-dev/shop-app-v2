@@ -1,4 +1,5 @@
 import type { ApiFailure } from "@shop/api-types";
+import type { ZodIssue } from "zod";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -9,5 +10,21 @@ export class ApiError extends Error {
     this.name = "ApiError";
     this.status = status;
     this.errors = failure?.errors ?? [];
+  }
+}
+
+export type ValidationTarget = "request" | "response";
+
+export class ApiValidationError extends Error {
+  readonly target: ValidationTarget;
+  readonly operation: string;
+  readonly issues: ZodIssue[];
+
+  constructor(target: ValidationTarget, operation: string, issues: ZodIssue[]) {
+    super(`Invalid ${target} for ${operation}`);
+    this.name = "ApiValidationError";
+    this.target = target;
+    this.operation = operation;
+    this.issues = issues;
   }
 }
