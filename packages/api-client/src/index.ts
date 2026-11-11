@@ -14,8 +14,19 @@ export {
   memoryStorage,
   SessionProvider,
   useSession,
+  useSignOut,
   webStorage,
   type Session,
   type SessionStorage,
 } from "./session";
 export { createApiClient } from "./client";
+export { useAuth } from "./auth";
+export {
+  hasRole,
+  isActivated,
+  isAdmin,
+  isStaff,
+  isVerified,
+  type Profile,
+  type Role,
+} from "./roles";
