@@ -13,6 +13,7 @@ class Item < ApplicationRecord
   after_create :recalculate_order_total
   after_update :recalculate_order_total, if: :pricing_changed?
   after_destroy :recalculate_order_total
+  after_commit :expire_cart_summary
 
   def subtotal
     quantity * price_at_purchase
@@ -20,8 +21,10 @@ class Item < ApplicationRecord
 
   private
 
-  # Moving a cart item into an order only changes order_id; the order computes its own total on
-  # save, so recalculating once per item there would be N pointless saves.
+  def expire_cart_summary
+    [user_id, user_id_before_last_save].compact.uniq.each { |id| Carts::SummaryCache.expire(id) }
+  end
+
   def pricing_changed?
     saved_change_to_quantity? || saved_change_to_price_at_purchase?
   end

@@ -11,8 +11,9 @@ RSpec.describe Api::V1::CartController, type: :controller do
   let(:cart_service_instance) { instance_double(Carts::Management) }
   let(:empty_cart_summary) { { cart_items: [], total_amount: 0.0, items_count: 0 } }
   let(:cart_summary_result) do
-    items_relation = Item.where(id: cart_item.id).includes(:product)
-    { cart_items: items_relation, total_amount: cart_item.price_at_purchase, items_count: 1 }
+    item = { item_id: cart_item.id, quantity: cart_item.quantity, price: product.price,
+             subtotal: cart_item.quantity * product.price, product: { id: product.id, name: product.name } }
+    { cart_items: [item], total_amount: item[:subtotal], items_count: cart_item.quantity }
   end
 
   before do

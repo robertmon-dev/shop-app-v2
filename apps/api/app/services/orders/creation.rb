@@ -32,6 +32,7 @@ module Orders
           order = build_order(cart_items, user_location)
           Products::Stock.take!(Products::Stock.quantities(order.items))
         end
+        Carts::SummaryCache.expire(@user.id)
         success_result(data: { order: order }, message: 'Order created successfully', status: :created)
       rescue Products::Stock::Insufficient => e
         unprocessable_content_with_errors_result(errors: [e.message], message: e.message)
