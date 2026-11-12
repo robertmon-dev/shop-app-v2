@@ -157,7 +157,16 @@ describe 'Refunds API' do
 
       response '200', 'refund completed' do
         let!(:refund) { create(:refund, :processing, order: order, user: user) }
+        before do
+          create(:payment, :paid, order: order)
+          allow(Stripe::Refund).to receive(:create).and_return(double(id: 're_1'))
+        end
         schema envelope_schema(refund: ref(:Refund))
+        run_test!
+      end
+
+      response '422', 'order has no paid payment' do
+        let!(:refund) { create(:refund, :processing, order: order, user: user) }
         run_test!
       end
     end
