@@ -61,4 +61,19 @@ RSpec.describe Product, type: :model do
       expect(build(:product)).to be_valid
     end
   end
+
+  describe 'stock_quantity' do
+    it 'is optional, meaning stock is not tracked' do
+      expect(build(:product, stock_quantity: nil)).to be_valid
+    end
+
+    it 'accepts zero' do
+      expect(build(:product, stock_quantity: 0)).to be_valid
+    end
+
+    it 'rejects negative and fractional values' do
+      expect(build(:product, stock_quantity: -1)).not_to be_valid
+      expect(build(:product, stock_quantity: 1.5)).not_to be_valid
+    end
+  end
 end

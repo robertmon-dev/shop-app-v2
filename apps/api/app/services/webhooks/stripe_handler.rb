@@ -22,7 +22,7 @@ module Webhooks
     private
 
     def endpoint_secret
-      secret = ENV.fetch('STRIPE_WEBHOOK_SECRET')
+      secret = ENV.fetch('STRIPE_WEBHOOK_SECRET', nil)
       return success_result(data: { secret: secret }, message: 'succeeded') if secret.present?
 
       message = 'Stripe webhook secret is not configured on the server.'

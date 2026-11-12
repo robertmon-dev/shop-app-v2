@@ -11,14 +11,23 @@ class Item < ApplicationRecord
   validate :must_belong_to_user_or_order
 
   after_create :recalculate_order_total
-  after_update :recalculate_order_total
+  after_update :recalculate_order_total, if: :pricing_changed?
   after_destroy :recalculate_order_total
+  after_commit :expire_cart_summary
 
   def subtotal
     quantity * price_at_purchase
   end
 
   private
+
+  def expire_cart_summary
+    [user_id, user_id_before_last_save].compact.uniq.each { |id| Carts::SummaryCache.expire(id) }
+  end
+
+  def pricing_changed?
+    saved_change_to_quantity? || saved_change_to_price_at_purchase?
+  end
 
   def must_belong_to_user_or_order
     errors.add(:base, 'Item must belong to a user (for cart) or an order') unless user_id.present? || order_id.present?

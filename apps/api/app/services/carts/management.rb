@@ -39,17 +39,25 @@ module Carts
       end
     end
 
-    def cart_summary
-      cart_items = @user.cart_items.includes(:product)
+    def cart_summary = SummaryCache.fetch(@user) { build_summary }
+
+    private
+
+    def build_summary
+      items = @user.cart_items.includes(:product).order(:id).to_a
 
       {
-        cart_items: cart_items,
-        total_amount: @user.cart_items.sum('quantity * price_at_purchase').to_d,
-        items_count: cart_items.sum(:quantity)
+        cart_items: items.map { |item| item_summary(item) },
+        total_amount: items.sum(0.to_d) { |item| item.quantity * item.product.price },
+        items_count: items.sum(&:quantity)
       }
     end
 
-    private
+    def item_summary(item)
+      price = item.product.price
+      { item_id: item.id, quantity: item.quantity, price: price, subtotal: item.quantity * price,
+        product: { id: item.product.id, name: item.product.name } }
+    end
 
     def process_cart(product, quantity)
       cart_item = @user.cart_items.find_or_initialize_by(product: product)

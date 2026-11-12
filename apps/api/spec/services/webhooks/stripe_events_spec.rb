@@ -78,6 +78,17 @@ RSpec.describe Webhooks::StripeEvents, type: :service do
         described_class.handle(event)
         expect(order.reload.payment_status_refunded?).to be true
       end
+
+      it 'settles open refund requests for the order' do
+        open_refund = create(:refund, :processing, order: order)
+        cancelled_refund = create(:refund, :cancelled, order: order)
+
+        described_class.handle(event)
+
+        expect(open_refund.reload).to have_attributes(status: 'refunded', payment_status: 'refunded',
+                                                      payment_id: payment.id)
+        expect(cancelled_refund.reload.status).to eq('cancelled')
+      end
     end
 
     context 'with an unhandled event type' do

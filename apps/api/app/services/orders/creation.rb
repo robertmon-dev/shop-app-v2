@@ -30,8 +30,12 @@ module Orders
         order = nil
         ActiveRecord::Base.transaction do
           order = build_order(cart_items, user_location)
+          Products::Stock.take!(Products::Stock.quantities(order.items))
         end
+        Carts::SummaryCache.expire(@user.id)
         success_result(data: { order: order }, message: 'Order created successfully', status: :created)
+      rescue Products::Stock::Insufficient => e
+        unprocessable_content_with_errors_result(errors: [e.message], message: e.message)
       end
     end
 
@@ -40,10 +44,14 @@ module Orders
       order = @user.orders.build(location: order_location)
       order.package_carrier = @package_carrier if @package_carrier.present?
 
-      order.items = cart_items
+      order.items = priced_at_checkout(cart_items)
       order.save!
       Item.where(id: order.item_ids).update_all(user_id: nil)
       order
+    end
+
+    def priced_at_checkout(cart_items)
+      cart_items.includes(:product).to_a.each { |item| item.price_at_purchase = item.product.price }
     end
 
     def create_location_snapshot(user_location)

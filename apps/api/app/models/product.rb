@@ -13,8 +13,15 @@ class Product < ApplicationRecord
   accepts_nested_attributes_for :product_photos, allow_destroy: true
   validates :name, presence: true
   validates :price, :vat_rate, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :stock_quantity, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
   validates :weight_kg, :height_cm, :width_cm, :length_cm,
             presence: true, numericality: { greater_than: 0 }
 
+  after_commit :expire_cart_summaries, if: -> { destroyed? || saved_change_to_price? || saved_change_to_name? }
+
   scope :with_details, -> { includes(:product_photos, :comments, :product_likes, :product_rates, :categories) }
+
+  private
+
+  def expire_cart_summaries = Carts::SummaryCache.expire_for_product(id)
 end

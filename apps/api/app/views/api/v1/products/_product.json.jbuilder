@@ -12,6 +12,7 @@ json.cache! [
   json.name product.name
   json.description product.description
   json.price product.price
+  json.stock_quantity product.stock_quantity
   json.average_rating product.average_rating if product.respond_to?(:average_rating)
   json.likes_count product.product_likes.count
   json.comments_count product.comments.count

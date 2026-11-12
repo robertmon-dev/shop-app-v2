@@ -64,5 +64,18 @@ RSpec.describe Webhooks::StripeHandler, type: :service do
         expect(call_service).to eq(processing_success_result)
       end
     end
+
+    context 'when STRIPE_WEBHOOK_SECRET is not configured' do
+      it 'returns a clear server error instead of raising' do
+        allow(ENV).to receive(:fetch).and_call_original
+        allow(ENV).to receive(:fetch).with('STRIPE_WEBHOOK_SECRET', nil).and_return(nil)
+
+        result = described_class.call(payload: '{}', sig_header: 'sig')
+
+        expect(result.success?).to be false
+        expect(result.status).to eq(:internal_server_error)
+        expect(result.message).to include('not configured')
+      end
+    end
   end
 end

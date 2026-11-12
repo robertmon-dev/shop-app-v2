@@ -3,6 +3,8 @@
 class Ability
   include CanCan::Ability
 
+  MODERATED_RESOURCES = [Product, Category, Comment, Order, Item, Payment, Refund, Invoice].freeze
+
   def initialize(user)
     alias_action :update_location, :update_details, :update_entrepreneur_details, to: :update_specifics
     alias_action :me, :logout, :actions, to: :profile_actions
@@ -23,7 +25,7 @@ class Ability
     if user.verified?
       can :manage, :cart
       can :create, Payment
-      can :show, Payment, order: { user_id: user.id }
+      can :read, Payment, order: { user_id: user.id }
       can :create, Refund
       can %i[show cancel], Refund, user_id: user.id
       can %i[read download], Invoice, user_id: user.id
@@ -33,7 +35,7 @@ class Ability
     if user.admin?
       can :manage, :all
     elsif user.moderator?
-      can :read, :all
+      can :read, MODERATED_RESOURCES
       can :update, [Product, Order, Payment, Refund]
       can :mark_status, Order
       can %i[complete], Refund

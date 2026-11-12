@@ -69,7 +69,7 @@ class ApplicationService
 
     def with_redis_fallback(fallback)
       yield
-    rescue Redis::CannotConnectError => e
+    rescue Redis::BaseConnectionError, ConnectionPool::TimeoutError => e
       Rails.logger.error("Redis error, falling back to DB: #{e.message}")
       fallback.call
     end

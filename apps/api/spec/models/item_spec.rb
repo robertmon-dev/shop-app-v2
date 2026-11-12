@@ -99,4 +99,31 @@ RSpec.describe Item, type: :model do
       item.send(:recalculate_order_total)
     end
   end
+
+  describe 'order total recalculation' do
+    let(:order) { create(:order) }
+
+    it 'does not recalculate when a cart item is merely moved into an order' do
+      cart_item = create(:cart_item, price_at_purchase: 10, quantity: 1)
+      expect_any_instance_of(Order).not_to receive(:recalculate_total!)
+
+      cart_item.update!(order: order, user: nil)
+    end
+
+    it 'recalculates when the quantity changes' do
+      item = create(:item, order: order, price_at_purchase: 10, quantity: 1)
+
+      item.update!(quantity: 3)
+
+      expect(order.reload.total_amount).to eq(30)
+    end
+
+    it 'recalculates when the price changes' do
+      item = create(:item, order: order, price_at_purchase: 10, quantity: 2)
+
+      item.update!(price_at_purchase: 20)
+
+      expect(order.reload.total_amount).to eq(40)
+    end
+  end
 end

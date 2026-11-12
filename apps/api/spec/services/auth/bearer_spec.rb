@@ -79,6 +79,28 @@ RSpec.describe Auth::Bearer, type: :service do
     end
   end
 
+  describe '.decode when the blacklist cannot be checked' do
+    it 'rejects the token instead of letting it through' do
+      allow(redis_double).to receive(:get).and_raise(StandardError, 'boom')
+      allow(redis_double).to receive(:with).and_yield(redis_double)
+
+      result = described_class.decode(token)
+
+      expect(result.success?).to be false
+    end
+
+    it 'falls back to the database when Redis times out' do
+      allow(redis_double).to receive(:with).and_yield(redis_double)
+      allow(redis_double).to receive(:get).and_raise(Redis::TimeoutError)
+      BlacklistedToken.create!(token: token, owner: create(:user), expires_at: 1.hour.from_now)
+
+      result = described_class.decode(token)
+
+      expect(result.success?).to be false
+      expect(result.status).to eq(:unauthorized)
+    end
+  end
+
   describe '.blacklist!' do
     context 'with a valid token' do
       it 'blacklists the token in Redis' do

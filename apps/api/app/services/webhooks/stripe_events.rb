@@ -59,9 +59,16 @@ module Webhooks
       ActiveRecord::Base.transaction do
         payment.mark_as_refunded!
         payment.order.mark_as_refunded!
+        settle_open_refunds(payment)
       end
 
       log_and_return_success_result("Processed refund for Payment ##{payment.id}.")
+    end
+
+    def self.settle_open_refunds(payment)
+      payment.order.refunds.where(status: %i[pending processing])
+             .update_all(status: Refund.statuses[:refunded], payment_status: Refund.payment_statuses[:refunded],
+                         payment_id: payment.id, updated_at: Time.current)
     end
   end
 end

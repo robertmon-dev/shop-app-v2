@@ -2,11 +2,21 @@
 
 module Orders
   class Management < ApplicationService
+    STATUS_TRANSITIONS = {
+      'pending' => %w[processing cancelled],
+      'processing' => %w[shipped cancelled],
+      'shipped' => %w[delivered]
+    }.freeze
+    MANUAL_PAYMENT_STATUSES = %w[unpaid failed].freeze
+
     def initialize(order)
       @order = order
     end
 
     def update(params)
+      forbidden = forbidden_change(params)
+      return forbidden if forbidden
+
       with_error_handling do
         if @order.update(params)
           success_result(data: { order: @order.reload }, message: 'Order updated successfully')
@@ -19,18 +29,22 @@ module Orders
     def cancel
       return cannot_cancel_result unless modifiable?
 
-      with_error_handling do
-        if @order.update(status: :cancelled)
-          success_result(data: { order: @order }, message: 'Order cancelled successfully')
-        else
-          unprocessable_content_result(record: @order, message: 'Order cancellation failed due to validation errors.')
+      with_stripe_error_handling do
+        release_payment
+        ActiveRecord::Base.transaction do
+          restock
+          @order.update!(status: :cancelled)
         end
+        success_result(data: { order: @order }, message: 'Order cancelled successfully')
       end
     end
 
     def destroy
       with_error_not_destroyed_handling do
-        @order.destroy!
+        ActiveRecord::Base.transaction do
+          restock if modifiable?
+          @order.destroy!
+        end
         destroy_success_result(message: 'Successfully destroyed order')
       end
     end
@@ -42,14 +56,14 @@ module Orders
 
       with_error_handling do
         ActiveRecord::Base.transaction do
-          item = @order.items.find_or_initialize_by(product_id: product.id)
-          item.price_at_purchase ||= product.price
-          item.quantity = item.new_record? ? quantity : item.quantity + quantity
-          item.save!
+          Products::Stock.take!({ product.id => quantity })
+          add_item(product, quantity)
           @order.save!
         end
 
         success_result(data: { order: @order.reload }, message: 'Product added to order successfully')
+      rescue Products::Stock::Insufficient => e
+        unprocessable_content_with_errors_result(errors: [e.message], message: e.message)
       end
     end
 
@@ -77,6 +91,9 @@ module Orders
       status_key = status.to_s
       return invalid_status_result(attribute, status_key) unless valid_statuses.key?(status_key)
 
+      forbidden = forbidden_change(attribute => status_key)
+      return forbidden if forbidden
+
       with_error_handling do
         if @order.update(attribute => status_key)
           success_result(data: { order: @order },
@@ -87,8 +104,63 @@ module Orders
       end
     end
 
+    def add_item(product, quantity)
+      item = @order.items.find_or_initialize_by(product_id: product.id)
+      item.price_at_purchase ||= product.price
+      item.quantity = item.new_record? ? quantity : item.quantity + quantity
+      item.save!
+    end
+
+    def restock
+      Products::Stock.give_back!(Products::Stock.quantities(@order.items.reload))
+    end
+
+    def forbidden_change(params)
+      params = params.to_h.with_indifferent_access
+      message = status_error(params[:status]) || payment_status_error(params[:payment_status])
+      return unless message
+
+      unprocessable_content_with_errors_result(errors: [message], message: message)
+    end
+
+    def status_error(target)
+      return if target.blank? || target.to_s == @order.status
+      return if STATUS_TRANSITIONS.fetch(@order.status, []).include?(target.to_s)
+
+      "Cannot change order status from #{@order.status} to #{target}."
+    end
+
+    def payment_status_error(target)
+      return if target.blank? || target.to_s == @order.payment_status
+      return if MANUAL_PAYMENT_STATUSES.include?(target.to_s)
+
+      "Payment status '#{target}' can only be set by a payment event, not manually."
+    end
+
+    def release_payment
+      if @order.payment_status_paid?
+        refund_paid_order
+      elsif @order.stripe_payment_intent_id.present? && !@order.payment_status_refunded?
+        Stripe::PaymentIntent.cancel(@order.stripe_payment_intent_id)
+      end
+    end
+
+    def refund_paid_order
+      payment = @order.payment
+      raise StandardError, 'Paid order has no payment to refund.' unless payment&.status_paid?
+
+      payment.refund_in_stripe!(idempotency_key: "order-cancel-#{@order.id}", metadata: { order_id: @order.id })
+      ActiveRecord::Base.transaction do
+        payment.mark_as_refunded!
+        @order.mark_as_refunded!
+      end
+    end
+
     def destroy_item(item)
-      item.destroy!
+      ActiveRecord::Base.transaction do
+        Products::Stock.give_back!({ item.product_id => item.quantity })
+        item.destroy!
+      end
       @order.items.reload
 
       success_result(data: { order: @order.reload }, message: 'Product removed from order successfully')
@@ -99,7 +171,10 @@ module Orders
       return invalid if invalid
       return destroy_item(item) if quantity >= item.quantity
 
-      item.update!(quantity: item.quantity - quantity)
+      ActiveRecord::Base.transaction do
+        Products::Stock.give_back!({ item.product_id => quantity })
+        item.update!(quantity: item.quantity - quantity)
+      end
       @order.items.reload
 
       success_result(data: { order: @order.reload }, message: 'Product quantity decreased successfully')

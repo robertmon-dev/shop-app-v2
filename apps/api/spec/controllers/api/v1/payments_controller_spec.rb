@@ -42,9 +42,14 @@ RSpec.describe Api::V1::PaymentsController, type: :controller do
         allow(controller).to receive(:current_user).and_return(user)
       end
 
-      it 'is forbidden' do
+      it 'lists only their own payments' do
+        create(:payment, order: create(:order))
+
         get :index, format: :json
-        expect(response).to have_http_status(:forbidden)
+
+        expect(response).to have_http_status(:ok)
+        ids = JSON.parse(response.body)['data']['payments'].map { |item| item['id'] }
+        expect(ids).to eq([payment.id])
       end
     end
   end

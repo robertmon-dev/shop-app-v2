@@ -5,6 +5,7 @@ module Auth
     SECRET_KEY = Rails.application.credentials.secret_key_base
     TOKEN_LIFETIME = ENV.fetch('TOKEN_LIFETIME_HOURS', 24).to_i.hours.to_i
     KEY_PREFIX = 'jwt_status:'
+    REDIS_UNAVAILABLE = [Redis::BaseConnectionError, ConnectionPool::TimeoutError].freeze
 
     def self.redis
       @redis ||= Redis.current
@@ -23,7 +24,7 @@ module Auth
 
     def self.cache_token_with_fallback(token)
       redis.with { |conn| conn.set(cache_key(token), 'active', ex: TOKEN_LIFETIME) }
-    rescue Redis::CannotConnectError => e
+    rescue *REDIS_UNAVAILABLE => e
       Rails.logger.error "Redis error: Failed to cache JWT - #{e.message}. Token issued without Redis cache."
     end
 
@@ -42,7 +43,10 @@ module Auth
     end
 
     def self.decode(token)
-      if blacklisted?(token).success? && blacklisted?(token).data[:is_blacklisted]
+      status = blacklisted?(token)
+      return status unless status.success?
+
+      if status.data[:is_blacklisted]
         return unauthorized_result(errors: ['Token has been blacklisted'], message: 'Token blacklisted.')
       end
 
@@ -77,7 +81,7 @@ module Auth
     def self.blacklisted?(token)
       is_blacklisted = begin
         check_redis_blacklist(token)
-      rescue Redis::CannotConnectError
+      rescue *REDIS_UNAVAILABLE
         check_db_blacklist(token)
       end
 

@@ -30,6 +30,13 @@ class Payment < ApplicationRecord
     )
   end
 
+  def refund_in_stripe!(idempotency_key:, metadata: {})
+    Stripe::Refund.create(
+      { payment_intent: stripe_payment_intent_id, metadata: metadata },
+      { idempotency_key: idempotency_key }
+    )
+  end
+
   def mark_as_paid!
     update!(status: :paid)
   end
