@@ -1398,10 +1398,10 @@ paths:
                   properties:
                     status:
                       type: string
-                      example: shipped
+                      example: processing
                     payment_status:
                       type: string
-                      example: paid
+                      example: failed
     delete:
       summary: Deletes an order (Admin only)
       tags:
@@ -2736,6 +2736,8 @@ paths:
                 required:
                   - success
                   - data
+        "422":
+          description: order has no paid payment
   "/api/v1/stripe_payments_webhook/handle":
     post:
       summary: Handles Stripe webhook events
@@ -3624,6 +3626,9 @@ components:
         price:
           type: string
           description: Decimal serialised as a string
+        stock_quantity:
+          type: integer
+          nullable: true
         average_rating:
           nullable: true
         likes_count:
