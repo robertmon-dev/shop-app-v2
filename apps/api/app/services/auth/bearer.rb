@@ -5,7 +5,6 @@ module Auth
     SECRET_KEY = Rails.application.credentials.secret_key_base
     TOKEN_LIFETIME = ENV.fetch('TOKEN_LIFETIME_HOURS', 24).to_i.hours.to_i
     KEY_PREFIX = 'jwt_status:'
-    # Everything that means "Redis cannot answer right now": refused connection, timeout, exhausted pool.
     REDIS_UNAVAILABLE = [Redis::BaseConnectionError, ConnectionPool::TimeoutError].freeze
 
     def self.redis
@@ -45,7 +44,6 @@ module Auth
 
     def self.decode(token)
       status = blacklisted?(token)
-      # Fail closed: if we cannot tell whether the token was revoked, we do not let it through.
       return status unless status.success?
 
       if status.data[:is_blacklisted]

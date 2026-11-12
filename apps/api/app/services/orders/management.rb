@@ -57,10 +57,7 @@ module Orders
       with_error_handling do
         ActiveRecord::Base.transaction do
           Products::Stock.take!({ product.id => quantity })
-          item = @order.items.find_or_initialize_by(product_id: product.id)
-          item.price_at_purchase ||= product.price
-          item.quantity = item.new_record? ? quantity : item.quantity + quantity
-          item.save!
+          add_item(product, quantity)
           @order.save!
         end
 
@@ -107,6 +104,13 @@ module Orders
       end
     end
 
+    def add_item(product, quantity)
+      item = @order.items.find_or_initialize_by(product_id: product.id)
+      item.price_at_purchase ||= product.price
+      item.quantity = item.new_record? ? quantity : item.quantity + quantity
+      item.save!
+    end
+
     def restock
       Products::Stock.give_back!(Products::Stock.quantities(@order.items.reload))
     end
@@ -133,8 +137,6 @@ module Orders
       "Payment status '#{target}' can only be set by a payment event, not manually."
     end
 
-    # Money must not be left dangling when an order is cancelled: a paid order is refunded,
-    # an unpaid one gets its open PaymentIntent cancelled so it can no longer be paid.
     def release_payment
       if @order.payment_status_paid?
         refund_paid_order

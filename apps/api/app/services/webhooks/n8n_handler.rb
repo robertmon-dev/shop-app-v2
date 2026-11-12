@@ -8,8 +8,6 @@ module Webhooks
       'shipment.delivered' => :delivered,
       'shipment.cancelled' => :cancelled
     }.freeze
-    # Shipment events only ever move an order forward. Carriers' events may arrive out of order
-    # or twice, so a stale one is acknowledged and ignored rather than rejected (n8n would retry it).
     PROGRESSION = %w[pending processing shipped delivered].freeze
 
     def self.call(payload) = new(payload).call
@@ -52,7 +50,6 @@ module Webhooks
       updated_result(order)
     end
 
-    # Cancelling goes through Orders::Management so that a paid order is refunded.
     def cancel(order)
       return no_action_needed_result(message: "Order ##{order.id} is already cancelled.") if order.status_cancelled?
 

@@ -2,8 +2,6 @@
 
 module Refunds
   class Update < ApplicationService
-    # `refunded` is deliberately unreachable here: money only moves through Refunds::Management#complete
-    # (or the Stripe charge.refunded webhook), and `cancelled` goes through Refunds::Management#cancel.
     TRANSITIONS = {
       'pending' => %w[processing rejected],
       'processing' => %w[rejected]

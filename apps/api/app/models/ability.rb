@@ -3,7 +3,6 @@
 class Ability
   include CanCan::Ability
 
-  # What a moderator may look at. Users, bans and personal details are deliberately not here.
   MODERATED_RESOURCES = [Product, Category, Comment, Order, Item, Payment, Refund, Invoice].freeze
 
   def initialize(user)
