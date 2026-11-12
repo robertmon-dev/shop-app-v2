@@ -26,7 +26,7 @@ module Products
       data = with_redis_fallback(db_query) do
         Rails.cache.fetch(cache_key_proc.call, expires_in: CACHE_EXPIRATION, &db_query)
       end
-      return not_found_result(errors: messages[:errors], message: messages[:failure]) if data.blank?
+      return not_found_result(errors: messages[:errors], message: messages[:failure]) if data.nil?
 
       success_result(data: { result_key => data }, message: messages[:success])
     end
@@ -53,7 +53,7 @@ module Products
     end
 
     def self.index_cache_key(page)
-      version = Rails.cache.fetch(VERSION_KEY) { 1 }
+      version = Rails.cache.fetch(VERSION_KEY) { SecureRandom.hex(4) }
       "#{INDEX_KEY_PREFIX}:#{page}:v#{version}"
     end
 
@@ -62,7 +62,7 @@ module Products
     end
 
     def self.increment_version
-      Rails.cache.increment(VERSION_KEY)
+      Rails.cache.write(VERSION_KEY, SecureRandom.hex(4))
     end
 
     private_class_method :index_cache_key, :show_cache_key, :increment_version, :index_cache_key, :db_query_for_one,

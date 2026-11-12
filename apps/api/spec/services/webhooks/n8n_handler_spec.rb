@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Webhooks::N8nHandler, type: :service do
-  let!(:order) { create(:order, status: :pending, user: create(:user, :with_full_details)) }
+  let!(:order) { create(:order, status: :pending, payment_status: :paid, user: create(:user, :with_full_details)) }
 
   describe '.call' do
     it 'moves the order to processing on shipment.created' do
@@ -14,34 +14,53 @@ RSpec.describe Webhooks::N8nHandler, type: :service do
     end
 
     it 'moves the order to shipped on shipment.shipped' do
+      order.update!(status: :processing)
       described_class.call(event: 'shipment.shipped', order_id: order.id)
 
       expect(order.reload.status_shipped?).to be true
     end
 
     it 'moves the order to delivered on shipment.delivered' do
+      order.update!(status: :shipped)
       described_class.call(event: 'shipment.delivered', order_id: order.id)
 
       expect(order.reload.status_delivered?).to be true
     end
 
     it 'stores the tracking id when provided' do
+      order.update!(status: :processing)
       described_class.call(event: 'shipment.shipped', order_id: order.id, tracking_id: 'TRK-1')
 
       expect(order.reload.transaction_id).to eq('TRK-1')
     end
 
     it 'leaves untouched attributes alone' do
-      order.update!(notes: 'keep me')
+      order.update!(notes: 'keep me', status: :processing)
       described_class.call(event: 'shipment.shipped', order_id: order.id)
 
       expect(order.reload.notes).to eq('keep me')
     end
 
     it 'accepts a raw JSON payload' do
+      order.update!(status: :processing)
       result = described_class.call({ event: 'shipment.shipped', order_id: order.id }.to_json)
 
       expect(result.success?).to be true
+    end
+
+    it 'refuses to skip a step in the order lifecycle' do
+      result = described_class.call(event: 'shipment.delivered', order_id: order.id)
+
+      expect(result.status).to eq(:unprocessable_content)
+      expect(order.reload.status_pending?).to be true
+    end
+
+    it 'refuses to fulfil an unpaid order' do
+      order.update!(payment_status: :unpaid)
+      result = described_class.call(event: 'shipment.created', order_id: order.id)
+
+      expect(result.status).to eq(:unprocessable_content)
+      expect(order.reload.status_pending?).to be true
     end
 
     it 'returns unprocessable_content for an unknown event' do
@@ -86,6 +105,7 @@ RSpec.describe Webhooks::N8nHandler, type: :service do
       end
 
       it 'cancels a pending order' do
+        order.update!(payment_status: :unpaid)
         result = described_class.call(event: 'shipment.cancelled', order_id: order.id)
 
         expect(result.success?).to be true

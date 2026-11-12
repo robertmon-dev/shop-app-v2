@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe 'Api::V1::N8nWebhook', type: :request do
   let(:json) { JSON.parse(response.body) }
-  let!(:order) { create(:order, status: :pending) }
+  let!(:order) { create(:order, status: :processing, payment_status: :paid, user: create(:user, :with_full_details)) }
   let(:secret) { ENV.fetch('N8N_WEBHOOK_SECRET') }
 
   def post_webhook(signature: secret, **payload)
@@ -27,7 +27,7 @@ RSpec.describe 'Api::V1::N8nWebhook', type: :request do
       post_webhook(signature: nil, event: 'shipment.shipped', order_id: order.id)
 
       expect(response).to have_http_status(:unauthorized)
-      expect(order.reload.status_pending?).to be true
+      expect(order.reload.status_processing?).to be true
     end
 
     it 'rejects a wrong signature' do

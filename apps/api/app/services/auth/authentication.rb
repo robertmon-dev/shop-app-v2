@@ -7,8 +7,8 @@ module Auth
     class << self
       def login(email, password)
         user = User.find_by(mail: email)
-        return authentication_failed('User is not activated.') unless user&.active?
-        return authentication_failed('Invalid email or password.') unless user.authenticate(password)
+        return authentication_failed('Invalid email or password.') unless user&.authenticate(password)
+        return authentication_failed('User is not activated.') unless user.active?
 
         user.two_factor_enabled? ? start_two_factor(user) : issue_token(user, 'Logged in successfully.')
       rescue StandardError => e
@@ -55,7 +55,7 @@ module Auth
 
       def verify_2fa_with_database(user, code)
         stored = user.second_factor_code
-        return invalid_two_factor_result unless stored&.code == code
+        return invalid_two_factor_result unless stored&.code == code && stored.expires_at&.future?
 
         stored.destroy
         issue_token(user, '2FA verified successfully via database.')

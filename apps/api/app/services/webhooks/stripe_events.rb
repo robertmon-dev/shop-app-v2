@@ -34,6 +34,8 @@ module Webhooks
           return no_action_needed_result(message: "Order ##{order.id} is already marked as paid.")
         end
 
+        return amount_mismatch_result(order, payment_intent) unless amount_matches?(order, payment_intent)
+
         ActiveRecord::Base.transaction do
           Payment.create_from_payment_intent(payment_intent)
           order.mark_as_paid!
@@ -47,6 +49,10 @@ module Webhooks
       order = Order.find_by(stripe_payment_intent_id: payment_intent.id)
       return no_action_needed_result(message: "Order not found for failed PI #{payment_intent.id}") unless order
 
+      if order.payment_status_paid? || order.payment_status_refunded?
+        return no_action_needed_result(message: "Order ##{order.id} is #{order.payment_status}, ignoring failure.")
+      end
+
       order.mark_as_failed!
       log_and_return_success_result("Marked Order ##{order.id} as failed.")
     end
@@ -55,6 +61,9 @@ module Webhooks
       payment = Payment.find_by(stripe_charge_id: charge.id)
       return no_action_needed_result(message: "Payment not found for refunded Charge #{charge.id}") unless payment
       return no_action_needed_result(message: "Payment ##{payment.id} already refunded.") if payment.status_refunded?
+      unless fully_refunded?(charge)
+        return no_action_needed_result(message: "Charge #{charge.id} was only partially refunded.")
+      end
 
       ActiveRecord::Base.transaction do
         payment.mark_as_refunded!
@@ -63,6 +72,20 @@ module Webhooks
       end
 
       log_and_return_success_result("Processed refund for Payment ##{payment.id}.")
+    end
+
+    def self.fully_refunded?(charge)
+      charge.amount_refunded.to_i >= charge.amount.to_i
+    end
+
+    def self.amount_matches?(order, payment_intent)
+      payment_intent.amount_received.to_i == order.total_in_cents
+    end
+
+    def self.amount_mismatch_result(order, payment_intent)
+      message = "Received #{payment_intent.amount_received} for Order ##{order.id}, expected #{order.total_in_cents}."
+      Rails.logger.error("Webhook Error: #{message}")
+      unprocessable_content_with_errors_result(errors: [message], message: 'Payment amount does not match the order.')
     end
 
     def self.settle_open_refunds(payment)

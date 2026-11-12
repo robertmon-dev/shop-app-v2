@@ -34,7 +34,7 @@ module Auth
       private
 
       def issue_code(user)
-        code = SecureRandom.hex(4)
+        code = SecureRandom.hex(8)
         store_code(user, code)
         UserMailer.dial_reset_code(user, code).deliver_later
       end

@@ -45,6 +45,8 @@ module Webhooks
       target = EVENT_STATUSES.fetch(event).to_s
       return locked_result(order) unless PROGRESSION.include?(order.status)
       return stale_result(order) unless advances?(order, target)
+      return out_of_order_result(order, target) unless next_step?(order, target)
+      return unpaid_result(order) unless order.payment_status_paid?
 
       order.update!(order_attributes)
       updated_result(order)
@@ -69,6 +71,18 @@ module Webhooks
     end
 
     def advances?(order, target) = PROGRESSION.index(target) > PROGRESSION.index(order.status)
+
+    def next_step?(order, target) = PROGRESSION.index(target) == PROGRESSION.index(order.status) + 1
+
+    def out_of_order_result(order, target)
+      message = "Order ##{order.id} is #{order.status} and cannot move straight to #{target}."
+      unprocessable_content_with_errors_result(errors: [message], message: message)
+    end
+
+    def unpaid_result(order)
+      message = "Order ##{order.id} is not paid and cannot be fulfilled."
+      unprocessable_content_with_errors_result(errors: [message], message: message)
+    end
 
     def locked_result(order)
       message = "Order ##{order.id} is #{order.status} and can no longer change status."

@@ -3,11 +3,12 @@
 module Orders
   class Management < ApplicationService
     STATUS_TRANSITIONS = {
-      'pending' => %w[processing cancelled],
-      'processing' => %w[shipped cancelled],
+      'pending' => %w[processing],
+      'processing' => %w[shipped],
       'shipped' => %w[delivered]
     }.freeze
     MANUAL_PAYMENT_STATUSES = %w[unpaid failed].freeze
+    SETTLED_PAYMENT_STATUSES = %w[paid refunded].freeze
 
     def initialize(order)
       @order = order
@@ -40,19 +41,15 @@ module Orders
     end
 
     def destroy
-      with_error_not_destroyed_handling do
-        ActiveRecord::Base.transaction do
-          restock if modifiable?
-          @order.destroy!
-        end
-        destroy_success_result(message: 'Successfully destroyed order')
-      end
+      return destroy_with_refund if modifiable? && @order.payment_status_paid?
+
+      with_error_not_destroyed_handling { destroy_order }
     end
 
     def add_product(product, quantity)
       quantity = quantity.to_i
       return invalid_input_result unless product && quantity.positive?
-      return cannot_modify_result unless modifiable?
+      return cannot_modify_result unless editable?
 
       with_error_handling do
         ActiveRecord::Base.transaction do
@@ -60,6 +57,7 @@ module Orders
           add_item(product, quantity)
           @order.save!
         end
+        Payments::Creation.sync_amount(@order)
 
         success_result(data: { order: @order.reload }, message: 'Product added to order successfully')
       rescue Products::Stock::Insufficient => e
@@ -70,10 +68,12 @@ module Orders
     def remove_product(product, quantity = nil)
       item = @order.items.find_by(product_id: product&.id)
       return product_not_in_order_result unless item
-      return cannot_modify_result unless modifiable?
+      return cannot_modify_result unless editable?
 
       with_error_not_destroyed_handling do
-        quantity.nil? ? destroy_item(item) : decrement_item(item, quantity.to_i)
+        result = quantity.nil? ? destroy_item(item) : decrement_item(item, quantity.to_i)
+        Payments::Creation.sync_amount(@order) if result.success?
+        result
       end
     end
 
@@ -86,6 +86,21 @@ module Orders
     end
 
     private
+
+    def destroy_with_refund
+      with_stripe_error_handling do
+        release_payment
+        with_error_not_destroyed_handling { destroy_order }
+      end
+    end
+
+    def destroy_order
+      ActiveRecord::Base.transaction do
+        restock if modifiable?
+        @order.destroy!
+      end
+      destroy_success_result(message: 'Successfully destroyed order')
+    end
 
     def mark_status(attribute, status, valid_statuses)
       status_key = status.to_s
@@ -126,12 +141,16 @@ module Orders
     def status_error(target)
       return if target.blank? || target.to_s == @order.status
       return if STATUS_TRANSITIONS.fetch(@order.status, []).include?(target.to_s)
+      return 'Orders can only be cancelled through the cancel action.' if target.to_s == 'cancelled'
 
       "Cannot change order status from #{@order.status} to #{target}."
     end
 
     def payment_status_error(target)
       return if target.blank? || target.to_s == @order.payment_status
+      if SETTLED_PAYMENT_STATUSES.include?(@order.payment_status)
+        return "Payment status cannot be changed manually once the order is #{@order.payment_status}."
+      end
       return if MANUAL_PAYMENT_STATUSES.include?(target.to_s)
 
       "Payment status '#{target}' can only be set by a payment event, not manually."
@@ -195,6 +214,10 @@ module Orders
 
     def modifiable?
       @order.status_pending? || @order.status_processing?
+    end
+
+    def editable?
+      modifiable? && !@order.payment_status_paid?
     end
 
     def invalid_input_result

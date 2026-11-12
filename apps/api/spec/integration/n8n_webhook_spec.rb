@@ -4,7 +4,7 @@ require 'swagger_helper'
 
 describe 'n8n webhook API' do
   let(:secret) { ENV.fetch('N8N_WEBHOOK_SECRET') }
-  let!(:order) { create(:order, user: create(:user)) }
+  let!(:order) { create(:order, status: :processing, payment_status: :paid, user: create(:user, :with_full_details)) }
 
   path '/api/v1/n8n_webhook/handle' do
     post 'Receives shipment events from n8n' do

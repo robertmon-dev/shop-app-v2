@@ -4,6 +4,7 @@ module Invoices
   class Creation < ApplicationService
     PAYMENT_TERM_DAYS = 14
     NUMBER_PREFIX = 'FV'
+    NUMBERING_LOCK_KEY = 7_431_001
 
     def self.call(payment) = new(payment).call
 
@@ -18,6 +19,7 @@ module Invoices
         invoice = nil
 
         ActiveRecord::Base.transaction do
+          lock_numbering
           order = find_order_with_details
           invoice = build_invoice(order)
           build_invoice_items(invoice, order)
@@ -30,6 +32,10 @@ module Invoices
     end
 
     private
+
+    def lock_numbering
+      ActiveRecord::Base.connection.execute("SELECT pg_advisory_xact_lock(#{NUMBERING_LOCK_KEY})")
+    end
 
     def find_order_with_details
       Order.includes({ user: { user_detail: %i[entrepreneur_detail locations] } }, { items: :product }, :location)
