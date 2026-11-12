@@ -8,6 +8,9 @@ module Webhooks
       'shipment.delivered' => :delivered,
       'shipment.cancelled' => :cancelled
     }.freeze
+    # Shipment events only ever move an order forward. Carriers' events may arrive out of order
+    # or twice, so a stale one is acknowledged and ignored rather than rejected (n8n would retry it).
+    PROGRESSION = %w[pending processing shipped delivered].freeze
 
     def self.call(payload) = new(payload).call
 
@@ -22,9 +25,7 @@ module Webhooks
       return order_not_found_result unless order
 
       with_error_handling do
-        order.update!(order_attributes)
-
-        success_result(data: { order: order }, message: "Order ##{order.id} updated from #{event}")
+        EVENT_STATUSES.fetch(event) == :cancelled ? cancel(order) : advance(order)
       end
     end
 
@@ -41,6 +42,41 @@ module Webhooks
     end
 
     def event = @payload[:event].to_s
+
+    def advance(order)
+      target = EVENT_STATUSES.fetch(event).to_s
+      return locked_result(order) unless PROGRESSION.include?(order.status)
+      return stale_result(order) unless advances?(order, target)
+
+      order.update!(order_attributes)
+      updated_result(order)
+    end
+
+    # Cancelling goes through Orders::Management so that a paid order is refunded.
+    def cancel(order)
+      return no_action_needed_result(message: "Order ##{order.id} is already cancelled.") if order.status_cancelled?
+
+      cancelled = Orders::Management.new(order).cancel
+      return cancelled unless cancelled.success?
+
+      order.update!(order_attributes.except(:status))
+      updated_result(order)
+    end
+
+    def updated_result(order)
+      success_result(data: { order: order }, message: "Order ##{order.id} updated from #{event}")
+    end
+
+    def stale_result(order)
+      no_action_needed_result(message: "Order ##{order.id} is already #{order.status}, ignoring #{event}.")
+    end
+
+    def advances?(order, target) = PROGRESSION.index(target) > PROGRESSION.index(order.status)
+
+    def locked_result(order)
+      message = "Order ##{order.id} is #{order.status} and can no longer change status."
+      unprocessable_content_with_errors_result(errors: [message], message: message)
+    end
 
     def order_attributes
       {

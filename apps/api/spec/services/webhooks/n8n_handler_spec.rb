@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe Webhooks::N8nHandler, type: :service do
-  let!(:order) { create(:order, status: :pending) }
+  let!(:order) { create(:order, status: :pending, user: create(:user, :with_full_details)) }
 
   describe '.call' do
     it 'moves the order to processing on shipment.created' do
@@ -61,6 +61,54 @@ RSpec.describe Webhooks::N8nHandler, type: :service do
 
       expect(result.success?).to be false
       expect(result.status).to eq(:not_found)
+    end
+
+    it 'ignores a stale event instead of moving the order backwards' do
+      order.update!(status: :shipped)
+      result = described_class.call(event: 'shipment.created', order_id: order.id)
+
+      expect(result.success?).to be true
+      expect(order.reload.status_shipped?).to be true
+    end
+
+    it 'does not revive a cancelled order' do
+      order.update!(status: :cancelled)
+      result = described_class.call(event: 'shipment.shipped', order_id: order.id)
+
+      expect(result.success?).to be false
+      expect(order.reload.status_cancelled?).to be true
+    end
+
+    context 'on shipment.cancelled' do
+      before do
+        allow(Stripe::Refund).to receive(:create).and_return(double(id: 're_1'))
+        allow(Stripe::PaymentIntent).to receive(:cancel)
+      end
+
+      it 'cancels a pending order' do
+        result = described_class.call(event: 'shipment.cancelled', order_id: order.id)
+
+        expect(result.success?).to be true
+        expect(order.reload.status_cancelled?).to be true
+      end
+
+      it 'refunds a paid order' do
+        order.update!(payment_status: :paid)
+        create(:payment, :paid, order: order)
+
+        described_class.call(event: 'shipment.cancelled', order_id: order.id)
+
+        expect(Stripe::Refund).to have_received(:create)
+        expect(order.reload).to have_attributes(status: 'cancelled', payment_status: 'refunded')
+      end
+
+      it 'refuses to cancel an order that already shipped' do
+        order.update!(status: :shipped)
+        result = described_class.call(event: 'shipment.cancelled', order_id: order.id)
+
+        expect(result.success?).to be false
+        expect(order.reload.status_shipped?).to be true
+      end
     end
 
     it 'returns unprocessable_content for malformed JSON' do
