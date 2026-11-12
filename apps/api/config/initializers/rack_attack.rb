@@ -5,6 +5,11 @@ class Rack::Attack
 
   cache.store = ActiveSupport::Cache::MemoryStore.new
 
+  # Stripe and n8n call from a few shared IPs and are authenticated by signature/secret, so the
+  # per-IP limits below would only make us drop legitimate events (Stripe retries, then gives up).
+  WEBHOOK_PATHS = %w[/api/v1/stripe_payments_webhook/handle /api/v1/n8n_webhook/handle].freeze
+  safelist('webhooks') { |req| req.post? && WEBHOOK_PATHS.include?(req.path) }
+
   throttle('req/ip', limit: 60, period: 60) do |req|
     req.ip
   end
