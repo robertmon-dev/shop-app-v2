@@ -39,9 +39,12 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            /** @description JWT for subsequent requests */
-                            token?: string;
+                            success: boolean;
                             message?: string;
+                            data: {
+                                /** @description JWT for subsequent requests */
+                                token: string;
+                            };
                         };
                     };
                 };
@@ -54,6 +57,10 @@ export interface paths {
                         "application/json": {
                             success: boolean;
                             message?: string;
+                            data: {
+                                user_id: number;
+                                two_factor_required: boolean;
+                            };
                         };
                     };
                 };
@@ -115,7 +122,12 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            token?: string;
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                token: string;
+                                user: components["schemas"]["User"];
+                            };
                         };
                     };
                 };
@@ -183,6 +195,9 @@ export interface paths {
                         "application/json": {
                             success: boolean;
                             message?: string;
+                            data: {
+                                user: components["schemas"]["User"];
+                            };
                         };
                     };
                 };
@@ -973,14 +988,8 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            /** @example true */
-                            success?: boolean;
-                            /** @example Application is ready. */
+                            success: boolean;
                             message?: string;
-                            details?: {
-                                /** @example ok */
-                                database?: string;
-                            };
                         };
                     };
                 };
@@ -991,15 +1000,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            /** @example false */
-                            success?: boolean;
-                            /** @example Application is not ready. */
-                            message?: string;
-                            errors?: string[];
-                            details?: {
-                                /** @example error */
-                                database?: string;
-                            };
+                            /** @enum {boolean} */
+                            success: false;
+                            message: string;
+                            errors: string[];
+                            data?: Record<string, never>;
                         };
                     };
                 };
@@ -1037,15 +1042,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            /** @example true */
-                            success?: boolean;
-                            /** @example Application is healthy. */
+                            success: boolean;
                             message?: string;
-                            details?: {
-                                /** @example ok */
-                                database?: string;
-                                /** @example ok */
-                                redis?: string;
+                            data: {
+                                database: boolean;
+                                redis: boolean;
                             };
                         };
                     };
@@ -3343,7 +3344,15 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                user: components["schemas"]["UserProfile"];
+                            };
+                        };
+                    };
                 };
             };
         };
@@ -3447,7 +3456,15 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                user: components["schemas"]["UserProfile"];
+                            };
+                        };
+                    };
                 };
                 /** @description forbidden */
                 403: {
@@ -3501,7 +3518,15 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            success: boolean;
+                            message?: string;
+                            data: {
+                                user: components["schemas"]["UserProfile"];
+                            };
+                        };
+                    };
                 };
             };
         };
