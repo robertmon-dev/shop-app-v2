@@ -70,6 +70,7 @@ git clone <repository>
 cd shop-app-v2
 make setup
 make install
+make types     # generated TypeScript types are not committed
 ```
 
 `make setup` copies `apps/api/.env.sample` to `apps/api/.env` if missing, installs gems, starts the containers, waits for them to become healthy and prepares both the development and test databases. `make install` installs the JavaScript workspaces.
@@ -110,8 +111,8 @@ make docker-up
 | `make lint` / `make lint-fix` | RuboCop |
 | `make security` | Brakeman |
 | `make swagger` | Regenerate `apps/api/swagger/v1/swagger.yaml` from the integration specs |
-| `make types` | `swagger`, then regenerate `packages/api-types` |
-| `make types-check` | Fail when the committed swagger or generated types are stale (CI) |
+| `make types` | `swagger`, then regenerate `packages/api-types` (gitignored output) |
+| `make types-check` | Fail when the committed `swagger.yaml` is stale (CI) |
 | `make cluster-up` | Three-node RabbitMQ cluster behind HAProxy |
 | `make docker-up` | Whole stack, application included, in Docker |
 
@@ -158,7 +159,7 @@ The OpenAPI document is the contract between the two sides:
 3. `make types` feeds that file to `openapi-typescript` and `@hey-api/openapi-ts`, producing `schema.d.ts`, the Zod schemas and an operation registry in `packages/api-types`.
 4. `apps/web` consumes both packages. `@shop/api-client` builds on those types: an `openapi-fetch` client, one module per resource under `src/actions`, plus `ApiProvider`, `SessionProvider`, `useAuth` and role helpers (`isAdmin`, `isStaff`, ...). `src/coverage.ts` makes the compiler complain when an endpoint has no client action.
 
-Generated files are committed. After changing an endpoint, run `make types` and commit the result; `make types-check` enforces it.
+Only `swagger.yaml` is committed; `schema.d.ts`, the Zod schemas and the registry are generated and gitignored, so run `make types` after cloning and after pulling API changes. After changing an endpoint, run `make swagger` and commit the result; `make types-check` enforces it.
 
 Backend internals — services, controllers, the response envelope — are described in [apps/api/README.md](apps/api/README.md#architecture).
 
@@ -198,7 +199,8 @@ The layout of `spec/` and the testing rules are in [apps/api/README.md](apps/api
 - **Database connection errors** — `make ps` to check health, `make wait` to block until ready.
 - **`PendingMigrationError` in tests** — `make db-prepare`.
 - **Credentials cannot be decrypted** — `RAILS_MASTER_KEY` is missing from `apps/api/.env`; `config/master.key` is not tracked.
-- **`make types-check` fails** — the API changed without regenerating; run `make types` and commit `swagger.yaml` and the generated files.
+- **`make types-check` fails** — the API changed without regenerating; run `make swagger` and commit `swagger.yaml`.
+- **`tsc` cannot find `./zod/zod.gen` or `schema`** — generated types are not committed; run `make types`.
 - **Stale containers after changing compose** — `make reset` (this deletes the volumes).
 
 ---
