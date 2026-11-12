@@ -118,13 +118,13 @@ describe 'Orders API' do
           order: {
             type: :object,
             properties: {
-              status: { type: :string, example: 'shipped' },
-              payment_status: { type: :string, example: 'paid' }
+              status: { type: :string, example: 'processing' },
+              payment_status: { type: :string, example: 'failed' }
             }
           }
         }
       }
-      let(:order_params) { { order: { status: 'shipped' } } }
+      let(:order_params) { { order: { status: 'processing' } } }
 
       context 'as an admin' do
         let(:Authorization) { "Bearer #{admin_user_token}" }

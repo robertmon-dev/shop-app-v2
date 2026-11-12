@@ -166,10 +166,18 @@ RSpec.describe 'Api::V1::Orders', type: :request do
   describe 'PATCH /api/v1/orders/:id/status' do
     it 'marks the order status as an admin' do
       patch "/api/v1/orders/#{user_order.id}/status",
-            params: { order: { status: 'shipped' } }.to_json, headers: admin_headers
+            params: { order: { status: 'processing' } }.to_json, headers: admin_headers
 
       expect(response).to have_http_status(:ok)
-      expect(user_order.reload.status_shipped?).to be true
+      expect(user_order.reload.status_processing?).to be true
+    end
+
+    it 'rejects a transition that skips a step' do
+      patch "/api/v1/orders/#{user_order.id}/status",
+            params: { order: { status: 'delivered' } }.to_json, headers: admin_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(user_order.reload.status_pending?).to be true
     end
 
     it 'is forbidden for a regular user' do
@@ -190,10 +198,18 @@ RSpec.describe 'Api::V1::Orders', type: :request do
   describe 'PATCH /api/v1/orders/:id/payment_status' do
     it 'marks the payment status as an admin' do
       patch "/api/v1/orders/#{user_order.id}/payment_status",
-            params: { order: { payment_status: 'paid' } }.to_json, headers: admin_headers
+            params: { order: { payment_status: 'failed' } }.to_json, headers: admin_headers
 
       expect(response).to have_http_status(:ok)
-      expect(user_order.reload.payment_status_paid?).to be true
+      expect(user_order.reload.payment_status_failed?).to be true
+    end
+
+    it 'refuses to mark an order paid by hand' do
+      patch "/api/v1/orders/#{user_order.id}/payment_status",
+            params: { order: { payment_status: 'paid' } }.to_json, headers: admin_headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(user_order.reload.payment_status_unpaid?).to be true
     end
   end
 end
