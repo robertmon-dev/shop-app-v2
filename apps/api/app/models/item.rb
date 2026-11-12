@@ -11,7 +11,7 @@ class Item < ApplicationRecord
   validate :must_belong_to_user_or_order
 
   after_create :recalculate_order_total
-  after_update :recalculate_order_total
+  after_update :recalculate_order_total, if: :pricing_changed?
   after_destroy :recalculate_order_total
 
   def subtotal
@@ -19,6 +19,12 @@ class Item < ApplicationRecord
   end
 
   private
+
+  # Moving a cart item into an order only changes order_id; the order computes its own total on
+  # save, so recalculating once per item there would be N pointless saves.
+  def pricing_changed?
+    saved_change_to_quantity? || saved_change_to_price_at_purchase?
+  end
 
   def must_belong_to_user_or_order
     errors.add(:base, 'Item must belong to a user (for cart) or an order') unless user_id.present? || order_id.present?

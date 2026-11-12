@@ -40,12 +40,12 @@ module Carts
     end
 
     def cart_summary
-      cart_items = @user.cart_items.includes(:product)
+      cart_items = @user.cart_items.includes(:product).order(:id).to_a
 
       {
         cart_items: cart_items,
-        total_amount: @user.cart_items.sum('quantity * price_at_purchase').to_d,
-        items_count: cart_items.sum(:quantity)
+        total_amount: cart_items.sum(0.to_d) { |item| item.quantity * item.product.price },
+        items_count: cart_items.sum(&:quantity)
       }
     end
 

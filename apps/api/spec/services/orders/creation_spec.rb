@@ -53,6 +53,19 @@ RSpec.describe Orders::Creation, type: :service do
       end
     end
 
+    context 'when the product price changed after it was added to the cart' do
+      let!(:cart_item) { create(:cart_item, user: user, product: product, quantity: 2, price_at_purchase: 10.00) }
+
+      before { product.update!(price: 15.00) }
+
+      it 'charges the current price' do
+        order = call_service.data[:order]
+
+        expect(order.items.first.price_at_purchase).to eq(15.00)
+        expect(order.reload.total_amount).to eq(30.00)
+      end
+    end
+
     context 'when creating an order from selected cart items' do
       let!(:cart_item_to_order) { create(:cart_item, user: user, product: product, quantity: 1) }
       let!(:cart_item_to_keep) { create(:cart_item, user: user, product: create(:product), quantity: 3) }

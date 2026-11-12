@@ -127,7 +127,15 @@ RSpec.describe Carts::Management, type: :service do
 
         expect(summary[:cart_items].size).to eq(2)
         expect(summary[:items_count]).to eq(5)
-        expect(summary[:total_amount]).to eq(70.00)
+        # 2 x 19.99 + 3 x 10.00 at the products' current prices, not the stored 20.00
+        expect(summary[:total_amount]).to eq(69.98)
+      end
+
+      it 'prices the cart at what the products cost now' do
+        create(:cart_item, user: user, product: product, quantity: 2, price_at_purchase: 1.00)
+        product.update!(price: 20.00)
+
+        expect(service.cart_summary[:total_amount]).to eq(40.00)
       end
     end
   end

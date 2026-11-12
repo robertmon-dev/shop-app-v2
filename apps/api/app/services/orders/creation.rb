@@ -40,10 +40,16 @@ module Orders
       order = @user.orders.build(location: order_location)
       order.package_carrier = @package_carrier if @package_carrier.present?
 
-      order.items = cart_items
+      order.items = priced_at_checkout(cart_items)
       order.save!
       Item.where(id: order.item_ids).update_all(user_id: nil)
       order
+    end
+
+    # The price stored on a cart item is from the moment it was added; the order must charge
+    # what the product costs now.
+    def priced_at_checkout(cart_items)
+      cart_items.includes(:product).to_a.each { |item| item.price_at_purchase = item.product.price }
     end
 
     def create_location_snapshot(user_location)
