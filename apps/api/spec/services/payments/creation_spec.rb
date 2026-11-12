@@ -105,6 +105,17 @@ RSpec.describe Payments::Creation, type: :service do
       end
     end
 
+    context 'when the order is cancelled' do
+      let(:order) { create(:order, :with_items, status: :cancelled, user: user) }
+
+      it 'refuses to create a payment intent' do
+        result = call_service
+
+        expect(result.success?).to be false
+        expect(result.status).to eq(:unprocessable_content)
+      end
+    end
+
     context 'when the Stripe API raises an error' do
       before do
         allow(Stripe::PaymentIntent).to receive(:create).and_raise(Stripe::APIError, 'Stripe is down')

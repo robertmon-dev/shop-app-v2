@@ -6,11 +6,11 @@ RSpec.describe Webhooks::StripeEvents, type: :service do
   describe '.handle' do
     context 'with a "payment_intent.succeeded" event' do
       let!(:user) { create(:user, :with_full_details) }
-      let!(:order) { create(:order, stripe_payment_intent_id: 'pi_123', user: user) }
+      let!(:order) { create(:order, :with_items, stripe_payment_intent_id: 'pi_123', user: user) }
       let(:payment_intent_object) do
         OpenStruct.new(
           id: 'pi_123',
-          amount_received: 5000,
+          amount_received: order.total_in_cents,
           currency: 'pln',
           latest_charge: OpenStruct.new(
             id: 'ch_456',
@@ -50,6 +50,21 @@ RSpec.describe Webhooks::StripeEvents, type: :service do
       end
     end
 
+    context 'when the received amount differs from the order total' do
+      let!(:order) { create(:order, :with_items, stripe_payment_intent_id: 'pi_short') }
+      let(:payment_intent_object) { OpenStruct.new(id: 'pi_short', amount_received: 1) }
+      let(:event) do
+        OpenStruct.new(type: 'payment_intent.succeeded', data: OpenStruct.new(object: payment_intent_object))
+      end
+
+      it 'does not mark the order as paid' do
+        result = described_class.handle(event)
+
+        expect(result.success?).to be false
+        expect(order.reload.payment_status_paid?).to be false
+      end
+    end
+
     context 'with a "payment_intent.payment_failed" event' do
       let!(:order) { create(:order, stripe_payment_intent_id: 'pi_failed_123') }
       let(:payment_intent_object) { OpenStruct.new(id: 'pi_failed_123') }
@@ -61,12 +76,18 @@ RSpec.describe Webhooks::StripeEvents, type: :service do
         described_class.handle(event)
         expect(order.reload.payment_status_failed?).to be true
       end
+
+      it 'does not overwrite an already paid order' do
+        order.update_column(:payment_status, Order.payment_statuses[:paid])
+        described_class.handle(event)
+        expect(order.reload.payment_status_paid?).to be true
+      end
     end
 
     context 'with a "charge.refunded" event' do
       let!(:order) { create(:order) }
       let!(:payment) { create(:payment, :paid, order: order, stripe_charge_id: 'ch_123') }
-      let(:charge_object) { OpenStruct.new(id: 'ch_123') }
+      let(:charge_object) { OpenStruct.new(id: 'ch_123', amount: 5000, amount_refunded: 5000) }
       let(:event) { OpenStruct.new(type: 'charge.refunded', data: OpenStruct.new(object: charge_object)) }
 
       it 'updates the payment status to refunded' do
@@ -77,6 +98,13 @@ RSpec.describe Webhooks::StripeEvents, type: :service do
       it 'updates the order payment status to refunded' do
         described_class.handle(event)
         expect(order.reload.payment_status_refunded?).to be true
+      end
+
+      it 'ignores a partial refund' do
+        charge_object.amount_refunded = 1000
+        described_class.handle(event)
+        expect(payment.reload.status_paid?).to be true
+        expect(order.reload.payment_status_refunded?).to be false
       end
 
       it 'settles open refund requests for the order' do

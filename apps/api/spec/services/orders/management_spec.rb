@@ -61,7 +61,39 @@ RSpec.describe Orders::Management, type: :service do
     end
   end
 
+  describe '#destroy' do
+    it 'refunds a paid order before destroying it' do
+      allow(Stripe::Refund).to receive(:create).and_return(double(id: 're_1'))
+      order.update!(status: :pending, payment_status: :paid)
+      create(:payment, :paid, order: order)
+
+      result = service.destroy
+
+      expect(result.success?).to be true
+      expect(Stripe::Refund).to have_received(:create)
+      expect(Order.exists?(order.id)).to be false
+    end
+
+    it 'keeps the order when the refund fails' do
+      allow(Stripe::Refund).to receive(:create).and_raise(Stripe::APIConnectionError.new('down'))
+      order.update!(status: :pending, payment_status: :paid)
+      create(:payment, :paid, order: order)
+
+      expect(service.destroy.success?).to be false
+      expect(Order.exists?(order.id)).to be true
+    end
+  end
+
   describe '#mark_payment_status' do
+    %w[paid refunded].each do |current|
+      it "refuses to change a #{current} order by hand" do
+        order.update!(payment_status: current)
+
+        expect(service.mark_payment_status('unpaid').success?).to be false
+        expect(order.reload.payment_status).to eq(current)
+      end
+    end
+
     it 'allows marking a payment as failed' do
       result = service.mark_payment_status('failed')
 
@@ -84,6 +116,13 @@ RSpec.describe Orders::Management, type: :service do
       expect(service.mark_order_status('processing').success?).to be true
       expect(service.mark_order_status('shipped').success?).to be true
       expect(order.reload.status_shipped?).to be true
+    end
+
+    it 'refuses to cancel without going through the cancel action' do
+      result = service.mark_order_status('cancelled')
+
+      expect(result.success?).to be false
+      expect(order.reload.status_pending?).to be true
     end
 
     it 'refuses to skip steps' do
@@ -218,6 +257,20 @@ RSpec.describe Orders::Management, type: :service do
       service.destroy
 
       expect(product.reload.stock_quantity).to eq(5)
+    end
+  end
+
+  describe 'modifying a paid order' do
+    let(:product) { create(:product) }
+
+    before { order.update!(payment_status: :paid) }
+
+    it 'refuses to add a product' do
+      expect(service.add_product(product, 1).success?).to be false
+    end
+
+    it 'refuses to remove a product' do
+      expect(service.remove_product(order.items.first.product).success?).to be false
     end
   end
 

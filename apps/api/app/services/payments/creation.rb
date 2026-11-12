@@ -15,6 +15,13 @@ module Payments
                                   message: 'Order not found or does not belong to the user.')
         end
 
+        unless order.status_pending? || order.status_processing?
+          return unprocessable_content_with_errors_result(
+            errors: ["Cannot pay for an order with status: #{order.status}."],
+            message: "Cannot pay for an order with status: #{order.status}."
+          )
+        end
+
         if order.payment_status_paid?
           return unprocessable_content_with_errors_result(errors: ['This order has already been paid for.'],
                                                           message: 'This order has already been paid for.')
@@ -34,6 +41,14 @@ module Payments
           success_result(data: { client_secret: payment_intent.client_secret },
                          message: 'Payment intent created successfully.')
         end
+      end
+
+      def sync_amount(order)
+        return if order.stripe_payment_intent_id.blank? || order.payment_status_paid?
+
+        update_payment_intent(order.reload)
+      rescue Stripe::StripeError => e
+        Rails.logger.warn("Could not sync PaymentIntent for Order ##{order.id}: #{e.message}")
       end
 
       def update_payment_intent(order)
