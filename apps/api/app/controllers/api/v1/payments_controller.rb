@@ -11,7 +11,7 @@ module Api
 
       private
 
-      def payments_scope = Payment.includes(:order).order(created_at: :desc)
+      def payments_scope = Payment.accessible_by(current_ability).includes(:order).order(created_at: :desc)
       def order_id = payment_params[:order_id]
       def payment_params = params.require(:payment).permit(:order_id)
     end

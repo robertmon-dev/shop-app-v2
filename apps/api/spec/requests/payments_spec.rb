@@ -41,9 +41,12 @@ RSpec.describe 'Api::V1::Payments', type: :request do
     end
 
     context 'as a regular user' do
-      it 'is forbidden' do
+      it 'returns only their own payments' do
         get '/api/v1/payments', headers: user_headers
-        expect(response).to have_http_status(:forbidden)
+
+        expect(response).to have_http_status(:ok)
+        ids = json['data']['payments'].map { |payment| payment['id'] }
+        expect(ids).to eq([user_payment.id])
       end
     end
 
