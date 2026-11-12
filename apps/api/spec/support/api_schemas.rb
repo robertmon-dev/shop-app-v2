@@ -55,7 +55,7 @@ module ApiSchemas
     Category: object({ id: UUID, name: TEXT,
                        parents: { type: :array, items: object({ id: UUID, name: TEXT }) } }),
     Product: object({ id: UUID, name: TEXT, description: NULLABLE_TEXT, price: DECIMAL,
-                      average_rating: { nullable: true }, likes_count: ID, comments_count: ID,
+                      stock_quantity: { type: :integer, nullable: true }, average_rating: { nullable: true }, likes_count: ID, comments_count: ID,
                       created_at: DATETIME, updated_at: DATETIME, photos: list(:ProductPhoto),
                       likes: list(:ProductLike), comments: list(:ProductComment), categories: list(:Category) },
                     required: %i[id name price likes_count comments_count photos likes comments categories]),

@@ -60,7 +60,7 @@ module Api
 
       def product_params
         params.require(:product).permit(
-          :name, :price, :description, :vat_rate, :weight_kg, :height_cm, :width_cm, :length_cm,
+          :name, :price, :description, :vat_rate, :weight_kg, :height_cm, :width_cm, :length_cm, :stock_quantity,
           product_photos_attributes: %i[id _destroy],
           product_photo_ids: []
         )

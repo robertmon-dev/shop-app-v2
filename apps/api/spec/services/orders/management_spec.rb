@@ -169,6 +169,58 @@ RSpec.describe Orders::Management, type: :service do
     end
   end
 
+  describe 'stock' do
+    let(:product) { create(:product, price: 50, stock_quantity: 5) }
+    let!(:item) { create(:item, order: order, product: product, quantity: 2, price_at_purchase: 50) }
+
+    it 'takes stock when a product is added' do
+      result = service.add_product(product, 3)
+
+      expect(result.success?).to be true
+      expect(product.reload.stock_quantity).to eq(2)
+    end
+
+    it 'refuses to add more than is in stock' do
+      result = service.add_product(product, 6)
+
+      expect(result.success?).to be false
+      expect(result.errors.first).to include('Not enough stock')
+      expect(product.reload.stock_quantity).to eq(5)
+    end
+
+    it 'gives stock back when a product is removed' do
+      service.remove_product(product)
+
+      expect(product.reload.stock_quantity).to eq(7)
+    end
+
+    it 'gives back only the removed part when the quantity is decreased' do
+      service.remove_product(product, 1)
+
+      expect(product.reload.stock_quantity).to eq(6)
+      expect(item.reload.quantity).to eq(1)
+    end
+
+    it 'gives stock back when the order is cancelled' do
+      service.cancel
+
+      expect(product.reload.stock_quantity).to eq(7)
+    end
+
+    it 'gives stock back when a pending order is destroyed' do
+      service.destroy
+
+      expect(product.reload.stock_quantity).to eq(7)
+    end
+
+    it 'does not give stock back for an order that was already delivered' do
+      order.update!(status: :delivered)
+      service.destroy
+
+      expect(product.reload.stock_quantity).to eq(5)
+    end
+  end
+
   describe '#add_product' do
     let(:new_product) { create(:product, price: 50) }
 

@@ -2,13 +2,11 @@
 
 module Orders
   class Management < ApplicationService
-    # Manual status changes follow this graph. `refunded` is reachable only through refunds.
     STATUS_TRANSITIONS = {
       'pending' => %w[processing cancelled],
       'processing' => %w[shipped cancelled],
       'shipped' => %w[delivered]
     }.freeze
-    # `paid` comes only from the Stripe webhook, `refunded` only from an actual refund.
     MANUAL_PAYMENT_STATUSES = %w[unpaid failed].freeze
 
     def initialize(order)
@@ -33,14 +31,20 @@ module Orders
 
       with_stripe_error_handling do
         release_payment
-        @order.update!(status: :cancelled)
+        ActiveRecord::Base.transaction do
+          restock
+          @order.update!(status: :cancelled)
+        end
         success_result(data: { order: @order }, message: 'Order cancelled successfully')
       end
     end
 
     def destroy
       with_error_not_destroyed_handling do
-        @order.destroy!
+        ActiveRecord::Base.transaction do
+          restock if modifiable?
+          @order.destroy!
+        end
         destroy_success_result(message: 'Successfully destroyed order')
       end
     end
@@ -52,6 +56,7 @@ module Orders
 
       with_error_handling do
         ActiveRecord::Base.transaction do
+          Products::Stock.take!({ product.id => quantity })
           item = @order.items.find_or_initialize_by(product_id: product.id)
           item.price_at_purchase ||= product.price
           item.quantity = item.new_record? ? quantity : item.quantity + quantity
@@ -60,6 +65,8 @@ module Orders
         end
 
         success_result(data: { order: @order.reload }, message: 'Product added to order successfully')
+      rescue Products::Stock::Insufficient => e
+        unprocessable_content_with_errors_result(errors: [e.message], message: e.message)
       end
     end
 
@@ -98,6 +105,10 @@ module Orders
           unprocessable_content_result(record: @order, message: "Failed to update order #{attribute}.")
         end
       end
+    end
+
+    def restock
+      Products::Stock.give_back!(Products::Stock.quantities(@order.items.reload))
     end
 
     def forbidden_change(params)
@@ -144,7 +155,10 @@ module Orders
     end
 
     def destroy_item(item)
-      item.destroy!
+      ActiveRecord::Base.transaction do
+        Products::Stock.give_back!({ item.product_id => item.quantity })
+        item.destroy!
+      end
       @order.items.reload
 
       success_result(data: { order: @order.reload }, message: 'Product removed from order successfully')
@@ -155,7 +169,10 @@ module Orders
       return invalid if invalid
       return destroy_item(item) if quantity >= item.quantity
 
-      item.update!(quantity: item.quantity - quantity)
+      ActiveRecord::Base.transaction do
+        Products::Stock.give_back!({ item.product_id => quantity })
+        item.update!(quantity: item.quantity - quantity)
+      end
       @order.items.reload
 
       success_result(data: { order: @order.reload }, message: 'Product quantity decreased successfully')

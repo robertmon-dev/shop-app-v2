@@ -30,8 +30,11 @@ module Orders
         order = nil
         ActiveRecord::Base.transaction do
           order = build_order(cart_items, user_location)
+          Products::Stock.take!(Products::Stock.quantities(order.items))
         end
         success_result(data: { order: order }, message: 'Order created successfully', status: :created)
+      rescue Products::Stock::Insufficient => e
+        unprocessable_content_with_errors_result(errors: [e.message], message: e.message)
       end
     end
 
@@ -46,8 +49,6 @@ module Orders
       order
     end
 
-    # The price stored on a cart item is from the moment it was added; the order must charge
-    # what the product costs now.
     def priced_at_checkout(cart_items)
       cart_items.includes(:product).to_a.each { |item| item.price_at_purchase = item.product.price }
     end
