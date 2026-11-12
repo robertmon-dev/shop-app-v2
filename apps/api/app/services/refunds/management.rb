@@ -39,10 +39,7 @@ module Refunds
     private
 
     def issue_stripe_refund(payment)
-      Stripe::Refund.create(
-        { payment_intent: payment.stripe_payment_intent_id, metadata: { refund_id: @refund.id } },
-        { idempotency_key: "refund-#{@refund.id}" }
-      )
+      payment.refund_in_stripe!(idempotency_key: "refund-#{@refund.id}", metadata: { refund_id: @refund.id })
     end
 
     def settle(payment)

@@ -61,17 +61,111 @@ RSpec.describe Orders::Management, type: :service do
     end
   end
 
-  describe '#mark_as_paid' do
-    it 'updates payment_status to paid' do
-      service.mark_payment_status('paid')
-      expect(order.reload.payment_status_paid?).to be true
+  describe '#mark_payment_status' do
+    it 'allows marking a payment as failed' do
+      result = service.mark_payment_status('failed')
+
+      expect(result.success?).to be true
+      expect(order.reload.payment_status_failed?).to be true
+    end
+
+    %w[paid refunded].each do |status|
+      it "refuses to set #{status} by hand" do
+        result = service.mark_payment_status(status)
+
+        expect(result.success?).to be false
+        expect(order.reload.payment_status_unpaid?).to be true
+      end
     end
   end
 
-  describe '#mark_as_shipped' do
-    it 'updates status to shipped' do
-      service.mark_order_status('shipped')
+  describe '#mark_order_status' do
+    it 'follows the status graph' do
+      expect(service.mark_order_status('processing').success?).to be true
+      expect(service.mark_order_status('shipped').success?).to be true
       expect(order.reload.status_shipped?).to be true
+    end
+
+    it 'refuses to skip steps' do
+      result = service.mark_order_status('delivered')
+
+      expect(result.success?).to be false
+      expect(order.reload.status_pending?).to be true
+    end
+
+    it 'refuses to leave a final status' do
+      order.update!(status: :cancelled)
+
+      expect(service.mark_order_status('processing').success?).to be false
+    end
+
+    it 'refuses to mark an order refunded without a refund' do
+      order.update!(status: :delivered)
+
+      expect(service.mark_order_status('refunded').success?).to be false
+    end
+  end
+
+  describe '#update with status fields' do
+    it 'applies the same rules as the dedicated endpoints' do
+      expect(service.update({ payment_status: 'paid' }).success?).to be false
+      expect(service.update({ status: 'delivered' }).success?).to be false
+      expect(order.reload).to have_attributes(status: 'pending', payment_status: 'unpaid')
+    end
+  end
+
+  describe '#cancel and payments' do
+    before do
+      allow(Stripe::Refund).to receive(:create).and_return(double(id: 're_1'))
+      allow(Stripe::PaymentIntent).to receive(:cancel)
+    end
+
+    context 'when the order is paid' do
+      let!(:order) { create(:order, :with_items, payment_status: :paid) }
+      let!(:payment) { create(:payment, :paid, order: order) }
+
+      it 'refunds the payment in Stripe and records it' do
+        result = service.cancel
+
+        expect(result.success?).to be true
+        expect(Stripe::Refund).to have_received(:create).with(
+          { payment_intent: payment.stripe_payment_intent_id, metadata: { order_id: order.id } },
+          { idempotency_key: "order-cancel-#{order.id}" }
+        )
+        expect(order.reload).to have_attributes(status: 'cancelled', payment_status: 'refunded')
+        expect(payment.reload.status).to eq('refunded')
+      end
+
+      it 'keeps the order untouched when Stripe fails' do
+        allow(Stripe::Refund).to receive(:create).and_raise(Stripe::APIConnectionError.new('down'))
+
+        result = service.cancel
+
+        expect(result.success?).to be false
+        expect(order.reload).to have_attributes(status: 'pending', payment_status: 'paid')
+        expect(payment.reload.status).to eq('paid')
+      end
+    end
+
+    context 'when the order is unpaid but has a PaymentIntent' do
+      before { order.update!(stripe_payment_intent_id: 'pi_open') }
+
+      it 'cancels the PaymentIntent so it can no longer be paid' do
+        result = service.cancel
+
+        expect(result.success?).to be true
+        expect(Stripe::PaymentIntent).to have_received(:cancel).with('pi_open')
+        expect(Stripe::Refund).not_to have_received(:create)
+      end
+    end
+
+    context 'when the order has no PaymentIntent' do
+      it 'does not call Stripe' do
+        service.cancel
+
+        expect(Stripe::PaymentIntent).not_to have_received(:cancel)
+        expect(Stripe::Refund).not_to have_received(:create)
+      end
     end
   end
 

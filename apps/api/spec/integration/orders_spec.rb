@@ -236,7 +236,7 @@ describe 'Orders API' do
   end
 
   { 'status' => %w[status processing],
-    'payment_status' => %w[payment_status paid] }.each do |segment, (attribute, value)|
+    'payment_status' => %w[payment_status failed] }.each do |segment, (attribute, value)|
     path "/api/v1/orders/{id}/#{segment}" do
       parameter name: :id, in: :path, type: :integer
       let(:id) { create(:order, user: regular_user).id }

@@ -2,11 +2,23 @@
 
 module Orders
   class Management < ApplicationService
+    # Manual status changes follow this graph. `refunded` is reachable only through refunds.
+    STATUS_TRANSITIONS = {
+      'pending' => %w[processing cancelled],
+      'processing' => %w[shipped cancelled],
+      'shipped' => %w[delivered]
+    }.freeze
+    # `paid` comes only from the Stripe webhook, `refunded` only from an actual refund.
+    MANUAL_PAYMENT_STATUSES = %w[unpaid failed].freeze
+
     def initialize(order)
       @order = order
     end
 
     def update(params)
+      forbidden = forbidden_change(params)
+      return forbidden if forbidden
+
       with_error_handling do
         if @order.update(params)
           success_result(data: { order: @order.reload }, message: 'Order updated successfully')
@@ -19,12 +31,10 @@ module Orders
     def cancel
       return cannot_cancel_result unless modifiable?
 
-      with_error_handling do
-        if @order.update(status: :cancelled)
-          success_result(data: { order: @order }, message: 'Order cancelled successfully')
-        else
-          unprocessable_content_result(record: @order, message: 'Order cancellation failed due to validation errors.')
-        end
+      with_stripe_error_handling do
+        release_payment
+        @order.update!(status: :cancelled)
+        success_result(data: { order: @order }, message: 'Order cancelled successfully')
       end
     end
 
@@ -77,6 +87,9 @@ module Orders
       status_key = status.to_s
       return invalid_status_result(attribute, status_key) unless valid_statuses.key?(status_key)
 
+      forbidden = forbidden_change(attribute => status_key)
+      return forbidden if forbidden
+
       with_error_handling do
         if @order.update(attribute => status_key)
           success_result(data: { order: @order },
@@ -84,6 +97,49 @@ module Orders
         else
           unprocessable_content_result(record: @order, message: "Failed to update order #{attribute}.")
         end
+      end
+    end
+
+    def forbidden_change(params)
+      params = params.to_h.with_indifferent_access
+      message = status_error(params[:status]) || payment_status_error(params[:payment_status])
+      return unless message
+
+      unprocessable_content_with_errors_result(errors: [message], message: message)
+    end
+
+    def status_error(target)
+      return if target.blank? || target.to_s == @order.status
+      return if STATUS_TRANSITIONS.fetch(@order.status, []).include?(target.to_s)
+
+      "Cannot change order status from #{@order.status} to #{target}."
+    end
+
+    def payment_status_error(target)
+      return if target.blank? || target.to_s == @order.payment_status
+      return if MANUAL_PAYMENT_STATUSES.include?(target.to_s)
+
+      "Payment status '#{target}' can only be set by a payment event, not manually."
+    end
+
+    # Money must not be left dangling when an order is cancelled: a paid order is refunded,
+    # an unpaid one gets its open PaymentIntent cancelled so it can no longer be paid.
+    def release_payment
+      if @order.payment_status_paid?
+        refund_paid_order
+      elsif @order.stripe_payment_intent_id.present? && !@order.payment_status_refunded?
+        Stripe::PaymentIntent.cancel(@order.stripe_payment_intent_id)
+      end
+    end
+
+    def refund_paid_order
+      payment = @order.payment
+      raise StandardError, 'Paid order has no payment to refund.' unless payment&.status_paid?
+
+      payment.refund_in_stripe!(idempotency_key: "order-cancel-#{@order.id}", metadata: { order_id: @order.id })
+      ActiveRecord::Base.transaction do
+        payment.mark_as_refunded!
+        @order.mark_as_refunded!
       end
     end
 
