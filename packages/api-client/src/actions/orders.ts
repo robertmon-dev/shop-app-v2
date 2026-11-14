@@ -12,8 +12,6 @@ export const useMyOrders = () =>
 
 type OrderResponse = ResponseBody<"/api/v1/orders/{id}", "get", 200>;
 
-// payment_status moves on the same Stripe webhook as Payment#status, so an
-// order being paid for needs the same "poll until settled" treatment.
 const orderPaymentSettling = (body: OrderResponse | undefined) =>
   body?.data?.order?.payment_status === "unpaid";
 

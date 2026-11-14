@@ -9,8 +9,6 @@ export const usePayments = () =>
 
 type PaymentResponse = ResponseBody<"/api/v1/payments/{id}", "get", 200>;
 
-// A fresh payment starts "unpaid" and only the Stripe webhook moves it on,
-// so poll until it settles instead of making the caller refetch manually.
 const paymentSettling = (body: PaymentResponse | undefined) =>
   body?.data?.payment?.status === "unpaid";
 

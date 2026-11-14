@@ -16,9 +16,6 @@ export const useCurrentUser = () => {
   );
 };
 
-// Ability#initialize only ever grants :index on User to admins (moderators
-// get no User access at all, everyone else is explicitly denied), so this
-// would 403 for anyone else — don't bother firing it.
 export const useUsers = () => {
   const { data } = useCurrentUser();
   return useApi().$api.useQuery(
@@ -39,7 +36,6 @@ export const useUserActions = (id: number, page?: number) =>
     params: { path: { id }, query: { page } },
   });
 
-// For a "load more"/infinite-scroll listing instead of a single page.
 export const useInfiniteUserActions = (id: number) =>
   useApi().$api.useInfiniteQuery(
     "get",

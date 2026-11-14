@@ -6,7 +6,6 @@ export const useInvoices = (page?: number) =>
     params: { query: { page } },
   });
 
-// For a "load more"/infinite-scroll listing instead of a single page.
 export const useInfiniteInvoices = () =>
   useApi().$api.useInfiniteQuery(
     "get",

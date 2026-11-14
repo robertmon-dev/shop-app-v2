@@ -17,8 +17,6 @@ export const useMyRefunds = () =>
 
 type RefundResponse = ResponseBody<"/api/v1/refunds/{id}", "get", 200>;
 
-// pending/processing are in-flight states (moderator action or webhook);
-// cancelled/refunded/rejected are terminal, so stop polling there.
 const refundSettling = (body: RefundResponse | undefined) => {
   const status = body?.data?.refund?.status;
   return status === "pending" || status === "processing";

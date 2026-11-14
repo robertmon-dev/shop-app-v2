@@ -11,7 +11,6 @@ export const useProducts = (page?: number) =>
     params: { query: { page } },
   });
 
-// For a "load more"/infinite-scroll listing instead of a single page.
 export const useInfiniteProducts = () =>
   useApi().$api.useInfiniteQuery(
     "get",

@@ -6,11 +6,6 @@ import { useApi } from "../provider";
 const CART = "/api/v1/cart";
 const cartQueryKey = ["get", CART] as const;
 
-// The cart summary is now cached server-side (one-hour TTL, dropped
-// explicitly on change - see Carts::SummaryCache), so there's no value in
-// treating every mount/refocus as stale; our own mutations below patch the
-// cache directly anyway, and other clients changing it is rare enough to
-// wait for a refocus/remount.
 export const useCart = () =>
   useApi().$api.useQuery("get", "/api/v1/cart", undefined, {
     staleTime: 30_000,
@@ -18,9 +13,6 @@ export const useCart = () =>
 
 type CartResponse = ResponseBody<"/api/v1/cart", "get", 200>;
 
-// Every cart mutation below returns the full updated cart, so write it
-// straight into the cache instead of invalidating and paying for a second
-// round trip just to re-fetch what we were already handed.
 const useApplyCart = () => {
   const queryClient = useQueryClient();
   return (body: CartResponse) => queryClient.setQueryData(cartQueryKey, body);

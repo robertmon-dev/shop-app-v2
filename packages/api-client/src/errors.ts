@@ -36,7 +36,6 @@ export class ApiError extends Error {
     return this.status >= 500;
   }
 
-  /** Checks the failure message and errors for a known business-rule reason. */
   matches(pattern: string | RegExp): boolean {
     const test =
       typeof pattern === "string"

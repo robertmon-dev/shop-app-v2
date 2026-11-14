@@ -33,11 +33,6 @@ export type LoginFlowState =
   | { status: "requiresTwoFactor"; mail: string; userId: number }
   | { status: "authenticated" };
 
-// /auth/login answers 200 with a token OR 202 asking for a 2FA code, with
-// no shared field to tell them apart except two_factor_required's presence.
-// This turns that into a state machine so callers don't have to parse the
-// raw response themselves, and remembers the mail for the verify_2fa step
-// (the 202 body only carries user_id, not mail).
 export const useLoginFlow = () => {
   const [state, setState] = useState<LoginFlowState>({ status: "idle" });
   const login = useLogin();
