@@ -1,10 +1,10 @@
 import { useInvalidate } from "../invalidate";
 import { useApi } from "../provider";
+import { isAdmin } from "../roles";
 import { useSession, useSignOut } from "../session";
 
 const USERS = "/api/v1/users";
 
-export const useUsers = () => useApi().$api.useQuery("get", "/api/v1/users");
 export const useCurrentUser = () => {
   const { isAuthenticated } = useSession();
   return useApi().$api.useQuery(
@@ -12,6 +12,19 @@ export const useCurrentUser = () => {
     "/api/v1/users/me",
     {},
     { enabled: isAuthenticated },
+  );
+};
+
+// Ability#initialize only ever grants :index on User to admins (moderators
+// get no User access at all, everyone else is explicitly denied), so this
+// would 403 for anyone else — don't bother firing it.
+export const useUsers = () => {
+  const { data } = useCurrentUser();
+  return useApi().$api.useQuery(
+    "get",
+    "/api/v1/users",
+    {},
+    { enabled: isAdmin(data?.data.user) },
   );
 };
 
