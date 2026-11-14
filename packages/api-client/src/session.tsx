@@ -58,7 +58,6 @@ export const webStorage = (
   },
 });
 
-/** Reads the `exp` claim (seconds since epoch) out of a JWT, without verifying it. */
 const decodeExpiry = (token: string): number | null => {
   try {
     const payload = token.split(".")[1];
@@ -84,8 +83,6 @@ export const createSessionStore = (
     expiryTimer = undefined;
   };
 
-  // Schedules the token to be dropped client-side once it expires, since the
-  // API never refreshes it and otherwise we'd only notice on the next 401.
   const scheduleExpiry = (token: string | null) => {
     clearExpiryTimer();
     expiresAt = token ? decodeExpiry(token) : null;
@@ -104,10 +101,8 @@ export const createSessionStore = (
     }, delay);
   };
 
-  // Covers a token already persisted from a previous visit.
   scheduleExpiry(storage.get());
 
-  // Another tab signing in/out should be reflected here too.
   storage.subscribe?.(() => {
     scheduleExpiry(storage.get());
     notify();
