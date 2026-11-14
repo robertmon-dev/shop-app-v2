@@ -1,3 +1,5 @@
+import { useCallback, useState } from "react";
+
 import { useApi } from "../provider";
 import { useSessionStore } from "../session";
 
@@ -24,6 +26,53 @@ export const useVerifyTwoFactor = () => {
       if (token) setToken(token);
     },
   });
+};
+
+export type LoginFlowState =
+  | { status: "idle" }
+  | { status: "requiresTwoFactor"; mail: string; userId: number }
+  | { status: "authenticated" };
+
+export const useLoginFlow = () => {
+  const [state, setState] = useState<LoginFlowState>({ status: "idle" });
+  const login = useLogin();
+  const verifyTwoFactor = useVerifyTwoFactor();
+
+  const submit = useCallback(
+    async (mail: string, password: string) => {
+      const { data } = await login.mutateAsync({ body: { mail, password } });
+      setState(
+        "two_factor_required" in data
+          ? { status: "requiresTwoFactor", mail, userId: data.user_id }
+          : { status: "authenticated" },
+      );
+    },
+    [login],
+  );
+
+  const verifyCode = useCallback(
+    async (secondFactorCode: string) => {
+      if (state.status !== "requiresTwoFactor") {
+        throw new Error("No pending 2FA verification to submit a code for");
+      }
+      await verifyTwoFactor.mutateAsync({
+        body: { mail: state.mail, second_factor_code: secondFactorCode },
+      });
+      setState({ status: "authenticated" });
+    },
+    [state, verifyTwoFactor],
+  );
+
+  const reset = useCallback(() => setState({ status: "idle" }), []);
+
+  return {
+    state,
+    submit,
+    verifyCode,
+    reset,
+    isPending: login.isPending || verifyTwoFactor.isPending,
+    error: login.error ?? verifyTwoFactor.error,
+  };
 };
 export const useActivateAccount = () =>
   useApi().$api.useMutation("patch", "/api/v1/auth/activate");

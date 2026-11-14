@@ -1,10 +1,11 @@
 import { useInvalidate } from "../invalidate";
+import { nextPage } from "../pagination";
 import { useApi } from "../provider";
+import { isAdmin } from "../roles";
 import { useSession, useSignOut } from "../session";
 
 const USERS = "/api/v1/users";
 
-export const useUsers = () => useApi().$api.useQuery("get", "/api/v1/users");
 export const useCurrentUser = () => {
   const { isAuthenticated } = useSession();
   return useApi().$api.useQuery(
@@ -12,6 +13,16 @@ export const useCurrentUser = () => {
     "/api/v1/users/me",
     {},
     { enabled: isAuthenticated },
+  );
+};
+
+export const useUsers = () => {
+  const { data } = useCurrentUser();
+  return useApi().$api.useQuery(
+    "get",
+    "/api/v1/users",
+    {},
+    { enabled: isAdmin(data?.data.user) },
   );
 };
 
@@ -24,6 +35,18 @@ export const useUserActions = (id: number, page?: number) =>
   useApi().$api.useQuery("get", "/api/v1/users/{id}/actions", {
     params: { path: { id }, query: { page } },
   });
+
+export const useInfiniteUserActions = (id: number) =>
+  useApi().$api.useInfiniteQuery(
+    "get",
+    "/api/v1/users/{id}/actions",
+    { params: { path: { id }, query: {} } },
+    {
+      pageParamName: "page",
+      initialPageParam: 1,
+      getNextPageParam: nextPage,
+    },
+  );
 
 export const useRegister = () =>
   useApi().$api.useMutation("post", "/api/v1/users");

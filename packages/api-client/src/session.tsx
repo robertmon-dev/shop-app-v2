@@ -12,10 +12,12 @@ export interface SessionStorage {
   get: () => string | null;
   set: (token: string) => void;
   remove: () => void;
+  subscribe?: (listener: () => void) => () => void;
 }
 
 export interface SessionStore {
   getToken: () => string | null;
+  getExpiresAt: () => number | null;
   setToken: (token: string) => void;
   clear: () => void;
   subscribe: (listener: () => void) => () => void;
@@ -23,6 +25,7 @@ export interface SessionStore {
 
 export interface Session extends SessionStore {
   token: string | null;
+  expiresAt: number | null;
   isAuthenticated: boolean;
 }
 
@@ -46,7 +49,25 @@ export const webStorage = (
   get: () => storage.getItem(key),
   set: (token) => storage.setItem(key, token),
   remove: () => storage.removeItem(key),
+  subscribe: (listener) => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.storageArea === storage && event.key === key) listener();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  },
 });
+
+const decodeExpiry = (token: string): number | null => {
+  try {
+    const payload = token.split(".")[1];
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const { exp } = JSON.parse(atob(base64)) as { exp?: unknown };
+    return typeof exp === "number" ? exp * 1000 : null;
+  } catch {
+    return null;
+  }
+};
 
 export const createSessionStore = (
   storage: SessionStorage = memoryStorage(),
@@ -54,14 +75,51 @@ export const createSessionStore = (
   const listeners = new Set<() => void>();
   const notify = () => listeners.forEach((listener) => listener());
 
+  let expiresAt: number | null = null;
+  let expiryTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const clearExpiryTimer = () => {
+    clearTimeout(expiryTimer);
+    expiryTimer = undefined;
+  };
+
+  const scheduleExpiry = (token: string | null) => {
+    clearExpiryTimer();
+    expiresAt = token ? decodeExpiry(token) : null;
+    if (expiresAt === null) return;
+
+    const delay = expiresAt - Date.now();
+    if (delay <= 0) {
+      storage.remove();
+      expiresAt = null;
+      return;
+    }
+    expiryTimer = setTimeout(() => {
+      storage.remove();
+      expiresAt = null;
+      notify();
+    }, delay);
+  };
+
+  scheduleExpiry(storage.get());
+
+  storage.subscribe?.(() => {
+    scheduleExpiry(storage.get());
+    notify();
+  });
+
   return {
     getToken: storage.get,
+    getExpiresAt: () => expiresAt,
     setToken: (token) => {
       storage.set(token);
+      scheduleExpiry(token);
       notify();
     },
     clear: () => {
       storage.remove();
+      clearExpiryTimer();
+      expiresAt = null;
       notify();
     },
     subscribe: (listener) => {
@@ -102,7 +160,12 @@ export const useSession = (): Session => {
     store.getToken,
     () => null,
   );
-  return { ...store, token, isAuthenticated: token !== null };
+  const expiresAt = useSyncExternalStore(
+    store.subscribe,
+    store.getExpiresAt,
+    () => null,
+  );
+  return { ...store, token, expiresAt, isAuthenticated: token !== null };
 };
 
 export const useSignOut = () => {

@@ -1,13 +1,24 @@
+import type { ResponseBody } from "@shop/api-types";
+
 import { useInvalidate } from "../invalidate";
+import { pollWhile } from "../polling";
 import { useApi } from "../provider";
 
 export const usePayments = () =>
   useApi().$api.useQuery("get", "/api/v1/payments");
 
+type PaymentResponse = ResponseBody<"/api/v1/payments/{id}", "get", 200>;
+
+const paymentSettling = (body: PaymentResponse | undefined) =>
+  body?.data?.payment?.status === "unpaid";
+
 export const usePayment = (id: number) =>
-  useApi().$api.useQuery("get", "/api/v1/payments/{id}", {
-    params: { path: { id } },
-  });
+  useApi().$api.useQuery(
+    "get",
+    "/api/v1/payments/{id}",
+    { params: { path: { id } } },
+    { refetchInterval: pollWhile(paymentSettling) },
+  );
 
 export const useCreatePayment = () => {
   const invalidate = useInvalidate("/api/v1/payments", "/api/v1/orders");

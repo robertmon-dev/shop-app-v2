@@ -1,4 +1,7 @@
+import type { ResponseBody } from "@shop/api-types";
+
 import { useInvalidate } from "../invalidate";
+import { pollWhile } from "../polling";
 import { useApi } from "../provider";
 
 const ORDERS = "/api/v1/orders";
@@ -7,10 +10,18 @@ export const useOrders = () => useApi().$api.useQuery("get", "/api/v1/orders");
 export const useMyOrders = () =>
   useApi().$api.useQuery("get", "/api/v1/orders/me");
 
+type OrderResponse = ResponseBody<"/api/v1/orders/{id}", "get", 200>;
+
+const orderPaymentSettling = (body: OrderResponse | undefined) =>
+  body?.data?.order?.payment_status === "unpaid";
+
 export const useOrder = (id: number) =>
-  useApi().$api.useQuery("get", "/api/v1/orders/{id}", {
-    params: { path: { id } },
-  });
+  useApi().$api.useQuery(
+    "get",
+    "/api/v1/orders/{id}",
+    { params: { path: { id } } },
+    { refetchInterval: pollWhile(orderPaymentSettling) },
+  );
 
 export const useCreateOrder = () => {
   const invalidate = useInvalidate(ORDERS, "/api/v1/cart");

@@ -46,7 +46,12 @@ export const createApiClient = ({
   if (validate) fetchClient.use(requestValidation, responseValidation);
   fetchClient.use(failures(onUnauthorized));
 
-  return { fetchClient, $api: createQueryClient(fetchClient) };
+  return {
+    fetchClient,
+    $api: createQueryClient(fetchClient),
+    baseUrl: baseUrl.replace(/\/+$/, ""),
+    getToken,
+  };
 };
 
 export type ApiClient = ReturnType<typeof createApiClient>;

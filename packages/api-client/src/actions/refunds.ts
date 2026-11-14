@@ -1,4 +1,7 @@
+import type { ResponseBody } from "@shop/api-types";
+
 import { useInvalidate } from "../invalidate";
+import { pollWhile } from "../polling";
 import { useApi } from "../provider";
 
 const REFUNDS = "/api/v1/refunds";
@@ -12,10 +15,20 @@ export const useOrderRefunds = (orderId: number) =>
 export const useMyRefunds = () =>
   useApi().$api.useQuery("get", "/api/v1/refunds/me");
 
+type RefundResponse = ResponseBody<"/api/v1/refunds/{id}", "get", 200>;
+
+const refundSettling = (body: RefundResponse | undefined) => {
+  const status = body?.data?.refund?.status;
+  return status === "pending" || status === "processing";
+};
+
 export const useRefund = (id: number) =>
-  useApi().$api.useQuery("get", "/api/v1/refunds/{id}", {
-    params: { path: { id } },
-  });
+  useApi().$api.useQuery(
+    "get",
+    "/api/v1/refunds/{id}",
+    { params: { path: { id } } },
+    { refetchInterval: pollWhile(refundSettling) },
+  );
 
 export const useCreateRefund = () => {
   const invalidate = useInvalidate(...refundScopes);
