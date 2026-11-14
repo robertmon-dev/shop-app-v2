@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 
 import { useInvalidate } from "../invalidate";
+import { nextPage } from "../pagination";
 import { useApi } from "../provider";
 
 const PRODUCTS = "/api/v1/products";
@@ -9,6 +10,19 @@ export const useProducts = (page?: number) =>
   useApi().$api.useQuery("get", "/api/v1/products", {
     params: { query: { page } },
   });
+
+// For a "load more"/infinite-scroll listing instead of a single page.
+export const useInfiniteProducts = () =>
+  useApi().$api.useInfiniteQuery(
+    "get",
+    "/api/v1/products",
+    { params: { query: {} } },
+    {
+      pageParamName: "page",
+      initialPageParam: 1,
+      getNextPageParam: nextPage,
+    },
+  );
 
 export const useProduct = (id: string) =>
   useApi().$api.useQuery("get", "/api/v1/products/{id}", {

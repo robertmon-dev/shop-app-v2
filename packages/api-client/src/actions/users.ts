@@ -1,4 +1,5 @@
 import { useInvalidate } from "../invalidate";
+import { nextPage } from "../pagination";
 import { useApi } from "../provider";
 import { isAdmin } from "../roles";
 import { useSession, useSignOut } from "../session";
@@ -37,6 +38,19 @@ export const useUserActions = (id: number, page?: number) =>
   useApi().$api.useQuery("get", "/api/v1/users/{id}/actions", {
     params: { path: { id }, query: { page } },
   });
+
+// For a "load more"/infinite-scroll listing instead of a single page.
+export const useInfiniteUserActions = (id: number) =>
+  useApi().$api.useInfiniteQuery(
+    "get",
+    "/api/v1/users/{id}/actions",
+    { params: { path: { id }, query: {} } },
+    {
+      pageParamName: "page",
+      initialPageParam: 1,
+      getNextPageParam: nextPage,
+    },
+  );
 
 export const useRegister = () =>
   useApi().$api.useMutation("post", "/api/v1/users");

@@ -1,9 +1,23 @@
+import { nextPage } from "../pagination";
 import { useApi } from "../provider";
 
 export const useInvoices = (page?: number) =>
   useApi().$api.useQuery("get", "/api/v1/invoices", {
     params: { query: { page } },
   });
+
+// For a "load more"/infinite-scroll listing instead of a single page.
+export const useInfiniteInvoices = () =>
+  useApi().$api.useInfiniteQuery(
+    "get",
+    "/api/v1/invoices",
+    { params: { query: {} } },
+    {
+      pageParamName: "page",
+      initialPageParam: 1,
+      getNextPageParam: nextPage,
+    },
+  );
 
 export const useMyInvoices = () =>
   useApi().$api.useQuery("get", "/api/v1/invoices/me");
