@@ -11,7 +11,43 @@ export class ApiError extends Error {
     this.status = status;
     this.errors = failure?.errors ?? [];
   }
+
+  get isUnauthorized() {
+    return this.status === 401;
+  }
+
+  get isForbidden() {
+    return this.status === 403;
+  }
+
+  get isNotFound() {
+    return this.status === 404;
+  }
+
+  get isConflict() {
+    return this.status === 409;
+  }
+
+  get isUnprocessable() {
+    return this.status === 422;
+  }
+
+  get isServerError() {
+    return this.status >= 500;
+  }
+
+  /** Checks the failure message and errors for a known business-rule reason. */
+  matches(pattern: string | RegExp): boolean {
+    const test =
+      typeof pattern === "string"
+        ? (text: string) => text.toLowerCase().includes(pattern.toLowerCase())
+        : (text: string) => pattern.test(text);
+    return test(this.message) || this.errors.some(test);
+  }
 }
+
+export const isApiError = (error: unknown): error is ApiError =>
+  error instanceof ApiError;
 
 export type ValidationTarget = "request" | "response";
 
