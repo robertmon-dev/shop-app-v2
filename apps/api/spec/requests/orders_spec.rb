@@ -86,7 +86,6 @@ RSpec.describe 'Api::V1::Orders', type: :request do
     end
 
     context 'when creation fails' do
-      # Poprawka warningu: :unprocessable_entity -> :unprocessable_content
       let(:failure_result) { ApplicationService::Result.new(success?: false, errors: ['Cart is empty'], status: :unprocessable_content) }
       before { allow(Orders::Creation).to receive(:call).and_return(failure_result) }
 
@@ -105,7 +104,7 @@ RSpec.describe 'Api::V1::Orders', type: :request do
     context 'as an admin' do
       it 'updates the order' do
         allow(order_management_service).to receive(:update).and_return(ApplicationService::Result.new(success?: true,
-                                                                                            data: { order: user_order }, status: :ok))
+                                                                                                      data: { order: user_order }, status: :ok))
         patch "/api/v1/orders/#{user_order.id}", headers: admin_headers, params: update_params
         expect(response).to have_http_status(:ok)
       end
@@ -126,7 +125,7 @@ RSpec.describe 'Api::V1::Orders', type: :request do
     it 'adds a product to an order' do
       allow(order_management_service).to receive(:add_product).with(product,
                                                                     2).and_return(ApplicationService::Result.new(success?: true,
-                                                                                                       data: { order: user_order }, status: :ok))
+                                                                                                                 data: { order: user_order }, status: :ok))
       post "/api/v1/orders/#{user_order.id}/products", headers: admin_headers, params: add_product_params
       expect(response).to have_http_status(:ok)
     end
@@ -137,7 +136,7 @@ RSpec.describe 'Api::V1::Orders', type: :request do
 
     it 'allows a user to cancel their own order' do
       allow(order_management_service).to receive(:cancel).and_return(ApplicationService::Result.new(success?: true,
-                                                                                          data: { order: user_order }, status: :ok))
+                                                                                                    data: { order: user_order }, status: :ok))
       post "/api/v1/orders/#{user_order.id}/cancel", headers: user_headers
       expect(response).to have_http_status(:ok)
     end
@@ -149,7 +148,7 @@ RSpec.describe 'Api::V1::Orders', type: :request do
     context 'as an admin' do
       it 'deletes the order' do
         allow(order_management_service).to receive(:destroy).and_return(ApplicationService::Result.new(success?: true,
-                                                                                             status: :no_content))
+                                                                                                       status: :no_content))
         delete "/api/v1/orders/#{user_order.id}", headers: admin_headers
         expect(response).to have_http_status(:no_content)
       end
